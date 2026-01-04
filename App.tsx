@@ -4,13 +4,8 @@ import { StyleSheet, Text, View } from 'react-native'
 import Accomplishment from './Components/Accomplishment'
 import StartButton from './Components/StartButton'
 import TaskView from './Components/TaskView'
-export const IDLE = 'IDLE' as const,
-  RUNNING = 'RUNNING' as const,
-  ACCOMPLISHMENT = 'ACCOMPLISHMENT' as const
-export type SessionPhase =
-  | { status: typeof IDLE }
-  | { status: typeof RUNNING; highlightedTaskId: string | null }
-  | { status: typeof ACCOMPLISHMENT }
+import { RUNNING, SessionPhase } from './state/session'
+
 export default function App() {
   const [status, setStatus] = useState<SessionPhase>({ status: 'IDLE' })
   const started = status.status === RUNNING

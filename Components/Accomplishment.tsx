@@ -1,8 +1,8 @@
 import { Image } from 'expo-image'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
-import { ACCOMPLISHMENT, IDLE, SessionPhase } from '../App'
 import { getRandomizedColors } from '../colors'
+import { ACCOMPLISHMENT, IDLE, SessionPhase } from '../state/session'
 
 const Accomplishment = ({
   status,
@@ -45,6 +45,7 @@ const Accomplishment = ({
             paddingHorizontal: 35,
             paddingVertical: 20,
           }}
+          onPress={() => setStatus({ status: IDLE })}
         >
           <Text style={{ fontSize: 18, fontWeight: 'bold' }}>LET'S GO!!</Text>
         </Pressable>
