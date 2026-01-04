@@ -1,7 +1,8 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
-const StartButton = ({ status, onPress }) => {
+const StartButton = ({ status, setStatus }) => {
+  const timerLength = 1
   const [startTime, setStartTime] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   useEffect(() => {
@@ -14,7 +15,7 @@ const StartButton = ({ status, onPress }) => {
   const handleStartPress = () => {
     if (!started) {
       setStartTime(new Date())
-      onPress({status: "RUNNING", highlightedTaskId: null})
+      setStatus({status: "RUNNING", highlightedTaskId: null})
     } else {
       createCancelAlert()
     }
@@ -27,16 +28,17 @@ const StartButton = ({ status, onPress }) => {
         onPress: () => {
           setStartTime(null)
       setElapsedMs(0)
-      onPress({status: "IDLE"})
+      setStatus({status: "Accomplishment"})
         },
 
       },
     ]);
-  const totalMs = 60 * 1000 * 25
+  const totalMs = 60 * 1000 * timerLength
   useEffect(() => {
     if (!started) return
 
     const interval = setInterval(() => {
+
       setElapsedMs(Date.now() - startTime.getTime())
     }, 1000)
 
@@ -45,6 +47,14 @@ const StartButton = ({ status, onPress }) => {
 
   const minutes = Math.floor((totalMs - elapsedMs) / 60000)
   const seconds = Math.floor(((totalMs - elapsedMs) % 60000) / 1000)
+  useEffect(() => {
+    if(minutes <= 0 & seconds < 0){
+        setStartTime(null)
+        setElapsedMs(0)
+        setStatus({status: "ACCOMPLISHMENT"})
+
+    }
+  }, [minutes, seconds])
   return (
     <TouchableOpacity
       style={[
@@ -69,7 +79,7 @@ const StartButton = ({ status, onPress }) => {
         <FontAwesome name='play' size={50} color='#fff'></FontAwesome>
       ) : (
         <Text
-          style={{ color: '#111', fontSize: 30 }}
+          style={{ color: '#111', fontSize: 30, textAlignVertical: "center" }}
         >{formatTime(minutes, seconds)}</Text>
       )}
     </TouchableOpacity>
