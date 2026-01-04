@@ -3,7 +3,7 @@ import Checkbox from 'expo-checkbox'
 import hexAlpha from 'hex-alpha'
 import { useState } from 'react'
 import { Alert, Text, TouchableOpacity, View } from 'react-native'
-import { IDLE, RUNNING, SessionPhase } from '../App'
+import { IDLE, RUNNING, SessionPhase } from '../state/session'
 const Task = ({
   title,
   id,

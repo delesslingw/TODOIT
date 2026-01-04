@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { getRandomizedColors, getRandomizedLightColors } from '../colors'
+import { useState } from 'react'
+import { ScrollView } from 'react-native'
+import { getRandomizedLightColors } from '../colors'
 import dummyTasks from '../dummyTasks'
-import { ScrollView, Text } from 'react-native'
 import Task from './Task'
 
 const TaskView = ({ status, setStatus }) => {

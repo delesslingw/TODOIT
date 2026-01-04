@@ -1,7 +1,7 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
-import { ACCOMPLISHMENT, RUNNING } from '../App'
+import { ACCOMPLISHMENT, RUNNING } from '../state/session'
 const StartButton = ({ status, setStatus }) => {
   const timerLength = 1
   const [startTime, setStartTime] = useState(null)
