@@ -1,21 +1,22 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
+import { ACCOMPLISHMENT, RUNNING } from '../App'
 const StartButton = ({ status, setStatus }) => {
   const timerLength = 1
   const [startTime, setStartTime] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   useEffect(() => {
-    if(status.status === "RUNNING" && startTime === null){
+    if(status.status === RUNNING && startTime === null){
       console.log("STARTING TIMER")
       setStartTime(new Date())
     }
   }, [status])
-  const started = status.status === "RUNNING"
+  const started = status.status === RUNNING
   const handleStartPress = () => {
     if (!started) {
       setStartTime(new Date())
-      setStatus({status: "RUNNING", highlightedTaskId: null})
+      setStatus({status: RUNNING, highlightedTaskId: null})
     } else {
       createCancelAlert()
     }
@@ -28,7 +29,7 @@ const StartButton = ({ status, setStatus }) => {
         onPress: () => {
           setStartTime(null)
       setElapsedMs(0)
-      setStatus({status: "Accomplishment"})
+      setStatus({status: ACCOMPLISHMENT})
         },
 
       },
@@ -51,7 +52,7 @@ const StartButton = ({ status, setStatus }) => {
     if(minutes <= 0 & seconds < 0){
         setStartTime(null)
         setElapsedMs(0)
-        setStatus({status: "ACCOMPLISHMENT"})
+        setStatus({status: ACCOMPLISHMENT})
 
     }
   }, [minutes, seconds])
