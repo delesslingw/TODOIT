@@ -30,7 +30,7 @@ const Task = ({
 
   const handleCheckToggle = (bool: boolean) => {
     setIsChecked(bool)
-    if (highlighted) {
+    if (highlighted && bool) {
       createCancelAlert()
     }
   }

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "TODOIT",
-    "slug": "TODOIT",
+    "slug": "todoit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,10 +20,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "android": {
+        "package": "studio.delesslin.todoit"
+      },
+      "package": "studio.delesslin.todoit"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c22aecfd-5842-4ec1-af2e-1fa3256ebb19"
+      }
     }
   }
 }
