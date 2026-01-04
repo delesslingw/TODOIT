@@ -3,30 +3,28 @@ import Checkbox from 'expo-checkbox'
 import hexAlpha from 'hex-alpha'
 import { useState } from 'react'
 import { Alert, Text, TouchableOpacity, View } from 'react-native'
-import { SessionPhase } from '../App'
+import { IDLE, RUNNING, SessionPhase } from '../App'
 const Task = ({
   title,
   id,
   color,
-  showCheckbox = false,
   status,
   setStatus,
 }: {
   title: string
   id: string
   color: string
-  showCheckbox?: boolean
   status: SessionPhase
   setStatus: (status: SessionPhase) => void
 }) => {
   const [isChecked, setIsChecked] = useState(false)
 
   const disabled =
-    status.status === 'RUNNING' &&
+    status.status === RUNNING &&
     status.highlightedTaskId !== null &&
     status.highlightedTaskId !== id
   const highlighted =
-    status.status === 'RUNNING' &&
+    status.status === RUNNING &&
     status.highlightedTaskId !== null &&
     status.highlightedTaskId === id
 
@@ -44,13 +42,13 @@ const Task = ({
         {
           text: 'Continue With Other Tasks',
           onPress: () => {
-            setStatus({ status: 'RUNNING', highlightedTaskId: null })
+            setStatus({ status: RUNNING, highlightedTaskId: null })
           },
         },
         {
           text: 'End Session',
           onPress: () => {
-            setStatus({ status: 'IDLE' })
+            setStatus({ status: IDLE })
           },
         },
       ]
@@ -74,7 +72,7 @@ const Task = ({
           alignItems: 'center',
         }}
       >
-        {status.status === 'RUNNING' &&
+        {status.status === RUNNING &&
         (status.highlightedTaskId === null ||
           status.highlightedTaskId === id) ? (
           <Checkbox
@@ -86,7 +84,7 @@ const Task = ({
           <TouchableOpacity
             disabled={disabled}
             onPress={() =>
-              setStatus({ status: 'RUNNING', highlightedTaskId: id })
+              setStatus({ status: RUNNING, highlightedTaskId: id })
             }
           >
             <FontAwesome name='play' size={20} color='#333' />

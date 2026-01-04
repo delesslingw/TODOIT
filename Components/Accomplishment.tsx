@@ -1,7 +1,7 @@
 import { Image } from 'expo-image'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
-import { SessionPhase } from '../App'
+import { ACCOMPLISHMENT, IDLE, SessionPhase } from '../App'
 import { getRandomizedColors } from '../colors'
 
 const Accomplishment = ({
@@ -11,14 +11,14 @@ const Accomplishment = ({
   status: SessionPhase
   setStatus: (status: SessionPhase) => void
 }) => {
-  const visible = status.status === 'ACCOMPLISHMENT'
+  const visible = status.status === ACCOMPLISHMENT
   return (
     <Modal
       animationType='slide'
       transparent={true}
       visible={visible}
       onRequestClose={() => {
-        setStatus({ status: 'IDLE' })
+        setStatus({ status: IDLE })
       }}
     >
       <View

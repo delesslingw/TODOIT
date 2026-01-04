@@ -1,18 +1,19 @@
 import { StatusBar } from 'expo-status-bar'
 import { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-// import { Feather } from "@react-native-vector-icons/feather";
 import Accomplishment from './Components/Accomplishment'
 import StartButton from './Components/StartButton'
 import TaskView from './Components/TaskView'
+export const IDLE = 'IDLE' as const,
+  RUNNING = 'RUNNING' as const,
+  ACCOMPLISHMENT = 'ACCOMPLISHMENT' as const
 export type SessionPhase =
-  | { status: 'IDLE' }
-  | { status: 'RUNNING'; highlightedTaskId: string | null }
-  | { status: 'ACCOMPLISHMENT' }
+  | { status: typeof IDLE }
+  | { status: typeof RUNNING; highlightedTaskId: string | null }
+  | { status: typeof ACCOMPLISHMENT }
 export default function App() {
-  // const [started, setStarted] = useState(false)
   const [status, setStatus] = useState<SessionPhase>({ status: 'IDLE' })
-  const started = status.status === 'RUNNING'
+  const started = status.status === RUNNING
   return (
     <>
       <View
