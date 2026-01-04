@@ -14,9 +14,7 @@ export default function App() {
       <View
         style={{
           backgroundColor: !started ? '#fff' : '#111',
-          paddingTop: 30,
-          paddingBottom: 10,
-          paddingHorizontal: 10,
+
           flex: 1,
         }}
       >
