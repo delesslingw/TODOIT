@@ -3,7 +3,7 @@ import { FlatList } from 'react-native'
 import { getRandomizedLightColors } from '../colors'
 import Task from './Task'
 
-const TaskView = ({ status, setStatus, tasks }) => {
+const TaskView = ({ status, setStatus, tasks, listId }) => {
   const [colors] = useState(getRandomizedLightColors())
 
   const renderItem = ({ item: task, index: i }) => (
@@ -14,6 +14,8 @@ const TaskView = ({ status, setStatus, tasks }) => {
       color={colors[i % colors.length]}
       status={status}
       setStatus={setStatus}
+      taskStatus={task.status}
+      listId={listId}
     />
   )
 

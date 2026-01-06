@@ -1,39 +1,74 @@
+// Components/Task.tsx
+//
+// Updated for the “single source of truth” plan:
+// - NO local `isChecked` state anymore.
+// - Checkbox directly PATCHes the Google Task status via React Query mutation.
+// - Checkbox is ONLY interactive while status.status === RUNNING.
+// - During RUNNING, you can check/uncheck freely (as long as this task is allowed by highlight rules).
+// - IMPORTANT: If you want to be able to uncheck tasks, you must be *rendering* completed tasks
+//   during RUNNING (e.g., fetch with showCompleted=true while RUNNING). Otherwise, completed tasks
+//   will disappear and you won’t have anything to uncheck.
+//
+// This component assumes you pass in:
+// - `listId` (Google tasklist id) so we know what list to patch in the API
+// - `taskStatus` ("needsAction" | "completed") from Google Tasks
+//
+// It also preserves your existing session UX:
+// - If a highlighted task is checked, you show the “End Session?” alert.
+
 import { FontAwesome } from '@react-native-vector-icons/fontawesome'
 import Checkbox from 'expo-checkbox'
 import hexAlpha from 'hex-alpha'
-import { useState } from 'react'
 import { Alert, Text, TouchableOpacity, View } from 'react-native'
 import { IDLE, RUNNING, SessionPhase } from '../state/session'
+import { useToggleComplete } from '../useToggleComplete'
+
+type GoogleTaskStatus = 'needsAction' | 'completed'
+
 const Task = ({
   title,
   id,
+  listId,
   color,
+  taskStatus,
   status,
   setStatus,
 }: {
   title: string
-  id: string
+  id: string // Google task id
+  listId: string // Google tasklist id
   color: string
+  taskStatus: GoogleTaskStatus // comes from Google (single source of truth)
   status: SessionPhase
   setStatus: (status: SessionPhase) => void
 }) => {
-  const [isChecked, setIsChecked] = useState(false)
+  // React Query mutation scoped to this list
+  const toggleComplete = useToggleComplete(listId)
 
+  // “Checked” is derived from Google task state (single source of truth)
+  const isChecked = taskStatus === 'completed'
+
+  // Your existing “disable other tasks when one is highlighted” behavior
   const disabled =
     status.status === RUNNING &&
     status.highlightedTaskId !== null &&
     status.highlightedTaskId !== id
+
   const highlighted =
     status.status === RUNNING &&
     status.highlightedTaskId !== null &&
     status.highlightedTaskId === id
 
-  const handleCheckToggle = (bool: boolean) => {
-    setIsChecked(bool)
-    if (highlighted && bool) {
-      createCancelAlert()
-    }
-  }
+  // Checkbox should only be available during RUNNING,
+  // and only for the highlighted task or when no task is highlighted.
+  const canShowCheckbox =
+    status.status === RUNNING &&
+    (status.highlightedTaskId === null || status.highlightedTaskId === id)
+
+  // We only allow toggling completion during RUNNING (your rule).
+  const canToggleCompletion =
+    canShowCheckbox && !disabled && !toggleComplete.isPending
+
   const createCancelAlert = () =>
     Alert.alert(
       'End Session?',
@@ -54,6 +89,31 @@ const Task = ({
       ]
     )
 
+  const handleCheckToggle = (nextChecked: boolean) => {
+    // console.log('CHECK TOGGLED', {
+    //   canToggleCompletion,
+    //   status: status.status,
+    //   highlightedTaskId:
+    //     status.status === 'RUNNING' ? status.highlightedTaskId : null,
+    //   taskId: id,
+    //   listId,
+    //   nextChecked,
+    // })
+    // Enforce your rule: not completable unless RUNNING.
+    if (!canToggleCompletion) return
+
+    // Patch Google immediately (single source of truth)
+    toggleComplete.mutate({
+      taskId: id,
+      completed: nextChecked,
+    })
+
+    // Preserve your existing “highlighted task checked prompts end/continue”
+    if (highlighted && nextChecked) {
+      createCancelAlert()
+    }
+  }
+
   return (
     <View
       style={{
@@ -72,13 +132,14 @@ const Task = ({
           alignItems: 'center',
         }}
       >
-        {status.status === RUNNING &&
-        (status.highlightedTaskId === null ||
-          status.highlightedTaskId === id) ? (
+        {canShowCheckbox ? (
           <Checkbox
             value={isChecked}
             onValueChange={handleCheckToggle}
+            // expo-checkbox: color prop is used on Android when checked
             color={isChecked ? '#aaa' : '#333'}
+            // If you want a visual cue when it’s not toggleable:
+            disabled={!canToggleCompletion}
           />
         ) : (
           <TouchableOpacity
@@ -91,12 +152,16 @@ const Task = ({
           </TouchableOpacity>
         )}
       </View>
+
       <Text
         key={id}
         style={{
           color: '#333',
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 'bold',
+          flexWrap: 'wrap',
+          flexShrink: 1,
+          marginRight: 24,
         }}
       >
         {title}
