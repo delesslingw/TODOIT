@@ -27,7 +27,7 @@ function Lists({ lists, status, setStatus }: Props) {
   const data = useMemo(() => listNames, [listNames])
 
   const PAGE_WIDTH = SCREEN_WIDTH
-  const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.86)
+  const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9)
   const CAROUSEL_HEIGHT = Math.round(SCREEN_HEIGHT * 0.78)
 
   if (!data.length) {
@@ -35,7 +35,7 @@ function Lists({ lists, status, setStatus }: Props) {
       <View
         style={{
           flex: 1,
-          backgroundColor: '#111',
+
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -46,7 +46,7 @@ function Lists({ lists, status, setStatus }: Props) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#111' }}>
+    <View style={{ flex: 1 }}>
       <Carousel
         width={PAGE_WIDTH}
         height={CAROUSEL_HEIGHT}
@@ -60,6 +60,13 @@ function Lists({ lists, status, setStatus }: Props) {
           parallaxAdjacentItemScale: 0.82,
         }}
         scrollAnimationDuration={700}
+        onConfigurePanGesture={(gesture) => {
+          'worklet'
+          // Require a more intentional horizontal swipe before the carousel activates
+          gesture
+            .activeOffsetX([-20, 20]) // >20px horizontal movement to activate
+            .failOffsetY([-10, 10]) // if user moves vertically early, give up
+        }}
         renderItem={({ item: listName, index }) => {
           const list = lists[listName]
 
@@ -75,17 +82,17 @@ function Lists({ lists, status, setStatus }: Props) {
                 style={{
                   width: CARD_WIDTH,
                   flex: 1,
-                  borderRadius: 18,
-                  padding: 16,
-                  backgroundColor: '#1d1dff',
+                  paddingTop: 16,
+                  paddingBottom: 100,
                   overflow: 'hidden',
+                  backgroundColor: '#bbb',
                 }}
               >
                 {/* Header */}
-                <View style={{ marginBottom: 12 }}>
+                <View style={{ marginBottom: 12, paddingHorizontal: 16 }}>
                   <Text
                     style={{
-                      color: 'white',
+                      color: 'black',
                       fontSize: 20,
                       fontWeight: '700',
                     }}
@@ -94,9 +101,7 @@ function Lists({ lists, status, setStatus }: Props) {
                   </Text>
 
                   {/* optional: show id (or remove) */}
-                  <Text
-                    style={{ color: 'rgba(255,255,255,0.65)', marginTop: 4 }}
-                  >
+                  <Text style={{ color: 'rgba(0,0,0,0.65)', marginTop: 4 }}>
                     {list?.id}
                   </Text>
                 </View>
@@ -111,9 +116,17 @@ function Lists({ lists, status, setStatus }: Props) {
                 </View>
 
                 {/* Footer indicator (optional) */}
-                <Text style={{ color: 'rgba(255,255,255,0.6)', marginTop: 10 }}>
-                  {index + 1} / {data.length}
-                </Text>
+                <View style={{ paddingHorizontal: 16 }}>
+                  <Text
+                    style={{
+                      color: 'rgba(255,255,255,0.6)',
+                      marginTop: 10,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {index + 1} / {data.length}
+                  </Text>
+                </View>
               </View>
             </View>
           )
