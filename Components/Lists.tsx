@@ -83,13 +83,13 @@ function Lists({ lists, status, setStatus }: Props) {
                   width: CARD_WIDTH,
                   flex: 1,
                   paddingTop: 16,
-                  paddingBottom: 130,
+                  paddingBottom: 100,
                   overflow: 'hidden',
                   backgroundColor: '#bbb',
                 }}
               >
                 {/* Header */}
-                <View style={{ marginBottom: 32, paddingHorizontal: 16 }}>
+                <View style={{ marginBottom: 18, paddingHorizontal: 16 }}>
                   <Text
                     style={{
                       color: 'black',
