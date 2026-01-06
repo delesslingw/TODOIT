@@ -1,5 +1,14 @@
 {
   "expo": {
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "scopes": ["https://www.googleapis.com/auth/tasks"],
+          "iosUrlScheme": "com.googleusercontent.apps.314267464804-tfv0et97to5unkctrnjqf92fvsbo9cb7"
+        }
+      ]
+    ],
     "name": "TODOIT",
     "slug": "todoit",
     "version": "1.0.0",
@@ -8,7 +17,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/adaptive-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

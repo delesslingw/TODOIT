@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { ScrollView } from 'react-native'
 import { getRandomizedLightColors } from '../colors'
-import dummyTasks from '../dummyTasks'
 import Task from './Task'
 
-const TaskView = ({ status, setStatus }) => {
+const TaskView = ({ status, setStatus, tasks }) => {
   const [colors, _] = useState(getRandomizedLightColors())
 
   return (
@@ -17,7 +16,7 @@ const TaskView = ({ status, setStatus }) => {
         flexDirection: 'column',
       }}
     >
-      {dummyTasks.map((task, i) => {
+      {tasks.map((task, i) => {
         return (
           <Task
             key={task.id}
