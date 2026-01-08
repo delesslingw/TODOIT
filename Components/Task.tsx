@@ -20,8 +20,8 @@ import { FontAwesome } from '@react-native-vector-icons/fontawesome'
 import Checkbox from 'expo-checkbox'
 import hexAlpha from 'hex-alpha'
 import { Alert, Text, TouchableOpacity, View } from 'react-native'
+import { useToggleComplete } from '../hooks/useToggleComplete'
 import { IDLE, RUNNING, SessionPhase } from '../state/session'
-import { useToggleComplete } from '../useToggleComplete'
 
 type GoogleTaskStatus = 'needsAction' | 'completed'
 

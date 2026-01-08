@@ -7,7 +7,7 @@ import { getRandomizedLightColors } from '../colors'
 const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
   return (
     <Animated.View
-      exiting={RollOutRight.duration(1000)}
+      exiting={RollOutRight.duration(1000).delay(2000)}
       style={{
         position: 'absolute',
         top: 0,

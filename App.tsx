@@ -5,79 +5,30 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { View } from 'react-native'
 
 import Accomplishment from './Components/Accomplishment'
 import Lists from './Components/Lists'
+import SplashLoadingScreen from './Components/SplashLoadingScreen'
 import StartButton from './Components/StartButton'
-import {
-  connectGoogle,
-  initGoogleAuth,
-  trySilentGoogleConnect,
-} from './googleAuth'
 import { GTask, GTaskList, listTaskLists, listTasks } from './googleTasksApi'
 import { getAccessTokenOrThrow } from './googleToken'
-import SplashLoadingScreen from './Screens/SplashLoadingScreen'
-import { RUNNING, SessionPhase } from './state/session'
-import { useForceOtaOnLaunch } from './useForceOtaOnLaunch'
+import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
+import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
+import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
 
 function AppView() {
-  // OTA gate
   const otaReady = useForceOtaOnLaunch()
 
-  // Session/UI state
-  const [status, setStatus] = useState<SessionPhase>({ status: 'IDLE' })
-  const [connected, setConnected] = useState(false)
+  const { connected, authBooting, authError, connect } = useGoogleAuthGate({
+    silentOnMount: true,
+  })
 
-  // Auth state
-  const [authBooting, setAuthBooting] = useState(true)
-  const [authError, setAuthError] = useState<string | null>(null)
-
+  const { status } = useStatus()
   const started = status.status === RUNNING
 
-  useEffect(() => {
-    let alive = true
-
-    ;(async () => {
-      try {
-        initGoogleAuth()
-
-        const token = await trySilentGoogleConnect()
-        if (!alive) return
-
-        if (token) {
-          setTimeout(() => setConnected(true), 2000)
-        }
-      } catch (err) {
-        if (!alive) return
-        setAuthError(String(err))
-      } finally {
-        if (!alive) return
-        setAuthBooting(false)
-      }
-    })()
-
-    return () => {
-      alive = false
-    }
-  }, [])
-
-  async function connect() {
-    try {
-      setAuthError(null)
-      setAuthBooting(true)
-      const token = await connectGoogle()
-      console.log('token ok:', token.slice(0, 10))
-      setTimeout(() => setConnected(true), 2000)
-    } catch (err) {
-      setAuthError(String(err))
-    } finally {
-      setAuthBooting(false)
-    }
-  }
-
-  // ✅ React Query hooks must be called EVERY render
+  // React Query hooks...
   const taskListsQuery = useQuery({
     queryKey: ['tasklists'],
     enabled: otaReady && connected,
@@ -108,23 +59,13 @@ function AppView() {
   const anyTasksLoading = tasksQueries.some((q) => q.isLoading)
   const anyTasksError = tasksQueries.find((q) => q.isError)?.error
 
-  // 🔒 IMPORTANT: avoid the one-render flicker by keying off query status
-  // Once connected, we consider "data booting" until tasklists are SUCCESS and tasks are done loading.
   const dataBooting =
     connected && (taskListsQuery.status !== 'success' || anyTasksLoading)
 
   const dataError =
     (taskListsQuery.isError ? taskListsQuery.error : null) ?? anyTasksError
 
-  // Show splash if:
-  // - OTA is still checking
-  // - auth is booting
-  // - user is not connected yet (so they can press AUTH)
-  // - OR data is still loading after connecting
   const showSplash = !otaReady || authBooting || !connected || dataBooting
-
-  // But only disable the AUTH button when we are actually "busy"
-  // (not just because we're waiting for the user to press AUTH)
   const splashBusy = !otaReady || authBooting || dataBooting
 
   const listsForUI = useMemo(() => {
@@ -157,18 +98,14 @@ function AppView() {
         }}
       >
         <View style={{ alignItems: 'center', marginVertical: 35 }}>
-          <StartButton
-            status={status}
-            setStatus={(st: SessionPhase) => setStatus(st)}
-          />
+          <StartButton />
         </View>
 
-        <Lists status={status} setStatus={setStatus} lists={listsForUI} />
-
+        <Lists lists={listsForUI} />
         <StatusBar style='auto' />
       </View>
 
-      <Accomplishment status={status} setStatus={setStatus} />
+      <Accomplishment />
     </>
   )
 }
@@ -178,7 +115,9 @@ const queryClient = new QueryClient()
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppView />
+      <StatusProvider>
+        <AppView />
+      </StatusProvider>
     </QueryClientProvider>
   )
 }

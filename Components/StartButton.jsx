@@ -2,7 +2,9 @@ import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
 import { ACCOMPLISHMENT, RUNNING } from '../state/session'
-const StartButton = ({ status, setStatus }) => {
+import { useStatus } from '../hooks/useStatus'
+const StartButton = () => {
+  const {status, setStatus} = useStatus()
   const timerLength = 1
   const [startTime, setStartTime] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { Dimensions, Text, View } from 'react-native'
 import Carousel from 'react-native-reanimated-carousel'
+import { useStatus } from '../hooks/useStatus'
 import TaskView from './TaskView' // adjust path
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
@@ -17,14 +18,13 @@ type ListsShape = Record<
 
 type Props = {
   lists: ListsShape
-  status: any
-  setStatus: (s: any) => void
 }
 
-function Lists({ lists, status, setStatus }: Props) {
+function Lists({ lists }: Props) {
   // Derived list “pages” from the object keys (order will be insertion order)
   const listNames = useMemo(() => Object.keys(lists ?? {}), [lists])
   const data = useMemo(() => listNames, [listNames])
+  const { status, setStatus } = useStatus()
 
   const PAGE_WIDTH = SCREEN_WIDTH
   const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9)
