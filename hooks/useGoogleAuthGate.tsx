@@ -4,7 +4,7 @@ import {
   connectGoogle,
   initGoogleAuth,
   trySilentGoogleConnect,
-} from '../googleAuth'
+} from '../helpers/googleAuth'
 
 type UseGoogleAuthGateOpts = {
   /** If false, skip silent connect on mount */

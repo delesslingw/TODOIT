@@ -2,8 +2,7 @@ import { Image } from 'expo-image'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { getRandomizedColors } from '../colors'
-import { useStatus } from '../hooks/useStatus'
-import { ACCOMPLISHMENT, IDLE } from '../state/session'
+import { ACCOMPLISHMENT, IDLE, useStatus } from '../hooks/useStatus'
 
 const Accomplishment = () => {
   const { status, setStatus } = useStatus()

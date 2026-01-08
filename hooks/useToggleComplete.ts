@@ -1,7 +1,7 @@
 // src/mutations/useToggleComplete.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { GTask, patchTask } from '../googleTasksApi'
-import { getAccessTokenOrThrow } from '../googleToken'
+import { GTask, patchTask } from '../helpers/googleTasksApi'
+import { getAccessTokenOrThrow } from '../helpers/googleToken'
 
 export function useToggleComplete(listId: string) {
   const qc = useQueryClient()
