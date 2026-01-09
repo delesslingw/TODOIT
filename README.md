@@ -1,7 +1,12 @@
 # TODOIT
 
+## Important Commands
+- `eas build -p android --profile preview`
+- `eas build -p android --profile preview --local`
+- `npx eas update --channel preview --message "Your Message"`
 
 
+## TODO
 - [ ] Add gesture close for ACCOMPLISHMENT
 - [ ] Add delete task functionality
 - [ ] add edit task functionality

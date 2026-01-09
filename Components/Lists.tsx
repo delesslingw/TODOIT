@@ -1,36 +1,25 @@
 import AntDesign from '@expo/vector-icons/AntDesign'
-import React, { useEffect, useMemo, useState } from 'react'
-import { Dimensions, Pressable, Text, TextInput, View } from 'react-native'
+import React, { useMemo, useState } from 'react'
+import { Dimensions, Pressable, Text, View } from 'react-native'
+import Dialog from 'react-native-dialog'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
 } from 'react-native-reanimated'
 import Carousel from 'react-native-reanimated-carousel'
 import { useStatus } from '../hooks/useStatus'
-import TaskView from './TaskView' // adjust path
+import TaskView from './TaskView'
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
-
-type Task = any
-
-type ListsShape = Record<
-  string, // list title / display name (e.g. "General")
-  {
-    id: string
-    tasks: Task[]
-  }
->
 
 type Props = {
   lists: Record<string, { id: string; tasks: any[] }>
   onAddTask: (listId: string, title: string) => Promise<void>
 }
 
-function Lists({ lists, onAddTask }: Props) {
-  // Derived list “pages” from the object keys (order will be insertion order)
+export default function Lists({ lists, onAddTask }: Props) {
   const listNames = useMemo(() => Object.keys(lists ?? {}), [lists])
   const data = useMemo(() => listNames, [listNames])
-  const { status, setStatus } = useStatus()
 
   const PAGE_WIDTH = SCREEN_WIDTH
   const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9)
@@ -38,180 +27,194 @@ function Lists({ lists, onAddTask }: Props) {
 
   if (!data.length) {
     return (
-      <View
-        style={{
-          flex: 1,
-
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: 'rgba(255,255,255,0.7)' }}>No lists yet.</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text>No lists yet.</Text>
       </View>
     )
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <Carousel
-        width={PAGE_WIDTH}
-        height={CAROUSEL_HEIGHT}
-        data={data}
-        loop
-        pagingEnabled
-        mode='parallax'
-        modeConfig={{
-          parallaxScrollingScale: 0.92,
-          parallaxScrollingOffset: 60,
-          parallaxAdjacentItemScale: 0.82,
-        }}
-        scrollAnimationDuration={700}
-        onConfigurePanGesture={(gesture) => {
-          'worklet'
-          // Require a more intentional horizontal swipe before the carousel activates
-          gesture
-            .activeOffsetX([-20, 20]) // >20px horizontal movement to activate
-            .failOffsetY([-10, 10]) // if user moves vertically early, give up
-        }}
-        renderItem={({ item: listName, index }) => {
-          const [showInput, setShowInput] = useState(false)
-          const list = lists[listName]
-          const rotation = useSharedValue(0)
-          useEffect(() => {
-            if (showInput) {
-              rotation.value = withSpring(-45)
-            } else {
-              rotation.value = withSpring(0)
-            }
-          }, [showInput])
-          const animatedStyle = useAnimatedStyle(() => ({
-            transform: [{ rotateZ: `${rotation.value}deg` }],
-          }))
-          return (
-            <View
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <View
-                style={{
-                  width: CARD_WIDTH,
-                  flex: 1,
-                  paddingTop: 16,
-                  paddingBottom: 100,
-                  overflow: 'hidden',
-                  backgroundColor: '#bbb',
-                }}
-              >
-                {/* Header */}
-                <View
-                  style={{
-                    marginBottom: 18,
-                    paddingHorizontal: 16,
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: 'black',
-                      fontSize: 24,
-                      fontWeight: '700',
-                    }}
-                  >
-                    {listName}
-                  </Text>
-                  <Animated.View style={animatedStyle}>
-                    <Pressable onPress={() => setShowInput((bool) => !bool)}>
-                      <AntDesign name='plus' size={24} color='black' />
-                    </Pressable>
-                  </Animated.View>
-                </View>
+    <Carousel
+      width={PAGE_WIDTH}
+      height={CAROUSEL_HEIGHT}
+      data={data}
+      loop
+      pagingEnabled
+      mode='parallax'
+      modeConfig={{
+        parallaxScrollingScale: 0.92,
+        parallaxScrollingOffset: 60,
+        parallaxAdjacentItemScale: 0.82,
+      }}
+      renderItem={({ item: listName, index }) => (
+        <ListCard
+          key={listName}
+          listName={listName}
+          index={index}
+          total={data.length}
+          list={lists[listName]}
+          cardWidth={CARD_WIDTH}
+          onAddTask={onAddTask}
+        />
+      )}
+    />
+  )
+}
 
-                {/* Tasks */}
-                <View style={{ flex: 1 }}>
-                  <Input
-                    show={showInput}
-                    taskListId={list.id}
-                    close={() => setShowInput(false)}
-                    onSubmit={(title) => onAddTask(list.id, title)}
-                  />
-                  <TaskView
-                    tasks={list?.tasks ?? []}
-                    status={status}
-                    setStatus={setStatus}
-                    listId={list.id}
-                  />
-                </View>
+function ListCard({
+  listName,
+  list,
+  index,
+  total,
+  cardWidth,
+  onAddTask,
+}: {
+  listName: string
+  list: { id: string; tasks: any[] }
+  index: number
+  total: number
+  cardWidth: number
+  onAddTask: (listId: string, title: string) => Promise<void>
+}) {
+  const { status, setStatus } = useStatus()
+  const [showDialog, setShowDialog] = useState(false)
+  const [taskTitle, setTaskTitle] = useState('')
+  const rotation = useSharedValue(0)
 
-                {/* Footer indicator (optional) */}
-                <View style={{ paddingHorizontal: 16 }}>
-                  <Text
-                    style={{
-                      color: 'rgba(255,255,255,0.6)',
-                      marginTop: 10,
-                      textAlign: 'right',
-                    }}
-                  >
-                    {index + 1} / {data.length}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )
+  const handleAddTask = async () => {
+    const trimmed = taskTitle.trim()
+    if (!trimmed) return
+    await onAddTask(list.id, trimmed)
+    setTaskTitle('')
+    setShowDialog(false)
+  }
+
+  const plusStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${rotation.value}deg` }],
+  }))
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: cardWidth,
+          flex: 1,
+          paddingTop: 16,
+          overflow: 'hidden',
+          backgroundColor: '#bbb',
+          borderRadius: 12,
         }}
-      />
+      >
+        {/* Header */}
+        <View
+          style={{
+            marginBottom: 12,
+            paddingHorizontal: 16,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: 'black', fontSize: 24, fontWeight: '700' }}>
+            {listName}
+          </Text>
+
+          <Animated.View style={plusStyle}>
+            <Pressable onPress={() => setShowDialog(true)}>
+              <AntDesign name='plus' size={24} color='black' />
+            </Pressable>
+          </Animated.View>
+        </View>
+
+        {/* The important part: a keyboard-aware vertical scroller INSIDE the card */}
+        <View style={{ paddingBottom: 120, paddingHorizontal: 16 }}>
+          <TaskView
+            tasks={list?.tasks ?? []}
+            status={status}
+            setStatus={setStatus}
+            listId={list.id}
+          />
+
+          <Text
+            style={{
+              color: 'rgba(255,255,255,0.6)',
+              marginTop: 12,
+              textAlign: 'right',
+            }}
+          >
+            {index + 1} / {total}
+          </Text>
+        </View>
+
+        <Dialog.Container
+          visible={showDialog}
+          onBackdropPress={() => setShowDialog(false)}
+        >
+          <Dialog.Title>Add Task</Dialog.Title>
+          <Dialog.Input
+            placeholder='What will you do next?'
+            value={taskTitle}
+            onChangeText={setTaskTitle}
+            returnKeyType='done'
+          />
+          <Dialog.Button label='Cancel' onPress={() => setShowDialog(false)} />
+          <Dialog.Button label='Add' bold onPress={handleAddTask} />
+        </Dialog.Container>
+      </View>
     </View>
   )
 }
 
-function Input({
-  show,
-  taskListId,
-  close,
-  onSubmit,
-}: {
-  show: boolean
-  taskListId: string
-  close: () => void
-  onSubmit: (title: string) => Promise<void>
-}) {
-  const [text, setText] = useState('')
-  const height = useSharedValue(0)
+// function Input({
+//   show,
+//   close,
+//   onSubmit,
+// }: {
+//   show: boolean
+//   close: () => void
+//   onSubmit: (title: string) => Promise<void>
+// }) {
+//   const [text, setText] = useState('')
+//   const height = useSharedValue(0)
+//   const inputRef = useRef<TextInput>(null)
 
-  const handleSubmit = async () => {
-    try {
-      await onSubmit(text)
-      height.value = withSpring(0)
-      setText('')
-    } catch (e) {
-      console.error('Error submitting new task: ', e)
-    }
-  }
-  useEffect(() => {
-    if (show) {
-      height.value = withSpring(90)
-    } else {
-      height.value = withSpring(0)
-    }
-  }, [show])
-  return (
-    <Animated.View style={{ backgroundColor: 'white', height }}>
-      <TextInput
-        style={{}}
-        onChangeText={setText}
-        value={text}
-        placeholder='Your task'
-        onSubmitEditing={() => {
-          console.log('done?')
-          handleSubmit()
-        }}
-      />
-    </Animated.View>
-  )
-}
-export default Lists
+//   useEffect(() => {
+//     height.value = withSpring(show ? 90 : 0)
+//     if (show) {
+//       // focus after layout opens
+//       setTimeout(() => inputRef.current?.focus(), 50)
+//     }
+//   }, [show])
+
+//   const animatedStyle = useAnimatedStyle(() => ({
+//     height: height.value,
+//   }))
+
+//   const handleSubmit = async () => {
+//     const trimmed = text.trim()
+//     if (!trimmed) return
+//     await onSubmit(trimmed)
+//     setText('')
+//     close()
+//   }
+
+//   return (
+//     <Animated.View
+//       style={[
+//         { backgroundColor: 'white', overflow: 'hidden', borderRadius: 8 },
+//         animatedStyle,
+//       ]}
+//     >
+//       <View style={{ padding: 12 }}>
+//         <TextInput
+//           ref={inputRef}
+//           value={text}
+//           onChangeText={setText}
+//           placeholder='Your task'
+//           returnKeyType='done'
+//           onSubmitEditing={handleSubmit}
+//         />
+//       </View>
+//     </Animated.View>
+//   )
+// }
