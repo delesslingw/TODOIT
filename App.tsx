@@ -10,7 +10,7 @@ import StartButton from './Components/StartButton'
 import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
 import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
 import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
-import { useTasksApi } from './hooks/useTasksApi'
+import { useTasks } from './hooks/useTasks'
 
 // ...
 
@@ -20,12 +20,12 @@ function AppView() {
     silentOnMount: true,
   })
   const [duration, setDuration] = useState(25)
-  const [showMenu, setShowMenu] = useState(true)
+  const [showMenu, setShowMenu] = useState(false)
   const { status } = useStatus()
   const started = status.status === RUNNING
   const enabled = otaReady && connected
 
-  const { listsForUI, dataBooting, dataError } = useTasksApi({
+  const { listsForUI, dataBooting, dataError, addTaskMutation } = useTasks({
     enabled,
     showCompleted: false,
   })
@@ -59,7 +59,12 @@ function AppView() {
           <StartButton duration={duration} />
         </View>
 
-        <Lists lists={listsForUI} />
+        <Lists
+          lists={listsForUI}
+          onAddTask={async (listId, title) => {
+            await addTaskMutation.mutateAsync({ listId, title })
+          }}
+        />
         <StatusBar style='auto' />
       </View>
       {showMenu ? (
