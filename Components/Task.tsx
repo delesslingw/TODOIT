@@ -16,13 +16,21 @@
 // It also preserves your existing session UX:
 // - If a highlighted task is checked, you show the “End Session?” alert.
 
+import Entypo from '@expo/vector-icons/Entypo'
 import { FontAwesome } from '@react-native-vector-icons/fontawesome'
 import Checkbox from 'expo-checkbox'
 import hexAlpha from 'hex-alpha'
-import { Alert, Text, TouchableOpacity, View } from 'react-native'
+import { useState } from 'react'
+import {
+  Alert,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { IDLE, RUNNING, SessionPhase } from '../hooks/useStatus'
 import { useToggleComplete } from '../hooks/useToggleComplete'
-
 type GoogleTaskStatus = 'needsAction' | 'completed'
 
 const Task = ({
@@ -44,6 +52,9 @@ const Task = ({
 }) => {
   // React Query mutation scoped to this list
   const toggleComplete = useToggleComplete(listId)
+
+  // Menu state
+  const [showMenu, setShowMenu] = useState(false)
 
   // “Checked” is derived from Google task state (single source of truth)
   const isChecked = taskStatus === 'completed'
@@ -166,6 +177,68 @@ const Task = ({
       >
         {title}
       </Text>
+
+      <Pressable
+        style={{ marginLeft: 'auto', marginRight: 12 }}
+        onPress={() => setShowMenu(true)}
+      >
+        <Entypo name='dots-three-vertical' size={24} color='#777' />
+      </Pressable>
+
+      <Modal
+        transparent
+        visible={showMenu}
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <Pressable style={{ flex: 1 }} onPress={() => setShowMenu(false)}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: 8,
+                overflow: 'hidden',
+                minWidth: 150,
+              }}
+            >
+              <Pressable
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#e0e0e0',
+                }}
+                onPress={() => {
+                  setShowMenu(false)
+                  // TODO: Hook up edit functionality
+                }}
+              >
+                <Text style={{ fontSize: 16, color: '#333' }}>Edit</Text>
+              </Pressable>
+
+              <Pressable
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                }}
+                onPress={() => {
+                  setShowMenu(false)
+                  // TODO: Hook up delete functionality
+                }}
+              >
+                <Text style={{ fontSize: 16, color: '#d32f2f' }}>Delete</Text>
+              </Pressable>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
