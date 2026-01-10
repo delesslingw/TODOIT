@@ -11,7 +11,6 @@ import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
 import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
 import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
 import { useTasks } from './hooks/useTasks'
-
 // ...
 
 function AppView() {

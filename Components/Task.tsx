@@ -31,6 +31,7 @@ import {
 } from 'react-native'
 import { IDLE, RUNNING, SessionPhase } from '../hooks/useStatus'
 import { useToggleComplete } from '../hooks/useToggleComplete'
+
 type GoogleTaskStatus = 'needsAction' | 'completed'
 
 const Task = ({
@@ -52,7 +53,8 @@ const Task = ({
 }) => {
   // React Query mutation scoped to this list
   const toggleComplete = useToggleComplete(listId)
-
+  // const deleteTask = useDeleteTask(listId)
+  // const editTask = useEditTask(listId)
   // Menu state
   const [showMenu, setShowMenu] = useState(false)
 
@@ -217,7 +219,30 @@ const Task = ({
                 }}
                 onPress={() => {
                   setShowMenu(false)
-                  // TODO: Hook up edit functionality
+                  Alert.prompt(
+                    'Edit Task',
+                    'Enter new title:',
+                    [
+                      {
+                        text: 'Cancel',
+                        onPress: () => {},
+                        style: 'cancel',
+                      },
+                      {
+                        text: 'Save',
+                        onPress: (newTitle) => {
+                          // if (newTitle && newTitle.trim()) {
+                          //   editTask.mutate({
+                          //     taskId: id,
+                          //     title: newTitle.trim(),
+                          //   })
+                          // }
+                        },
+                      },
+                    ],
+                    'plain-text',
+                    title
+                  )
                 }}
               >
                 <Text style={{ fontSize: 16, color: '#333' }}>Edit</Text>
@@ -230,7 +255,24 @@ const Task = ({
                 }}
                 onPress={() => {
                   setShowMenu(false)
-                  // TODO: Hook up delete functionality
+                  Alert.alert(
+                    'Delete Task?',
+                    'Are you sure you want to delete this task?',
+                    [
+                      {
+                        text: 'Cancel',
+                        onPress: () => {},
+                        style: 'cancel',
+                      },
+                      {
+                        text: 'Delete',
+                        onPress: () => {
+                          // deleteTask.mutate(id)
+                        },
+                        style: 'destructive',
+                      },
+                    ]
+                  )
                 }}
               >
                 <Text style={{ fontSize: 16, color: '#d32f2f' }}>Delete</Text>

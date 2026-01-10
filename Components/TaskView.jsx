@@ -20,6 +20,7 @@ const TaskView = ({ status, setStatus, tasks, listId }) => {
   )
 
   return (
+
     <FlatList
       data={tasks}
       keyExtractor={(t) => t.id}
