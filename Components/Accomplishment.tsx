@@ -2,15 +2,11 @@ import { Image } from 'expo-image'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { getRandomizedColors } from '../colors'
-import { ACCOMPLISHMENT, IDLE, SessionPhase } from '../state/session'
+import { useStatus } from '../hooks/useStatus'
+import { ACCOMPLISHMENT, IDLE } from '../state/session'
 
-const Accomplishment = ({
-  status,
-  setStatus,
-}: {
-  status: SessionPhase
-  setStatus: (status: SessionPhase) => void
-}) => {
+const Accomplishment = () => {
+  const { status, setStatus } = useStatus()
   const visible = status.status === ACCOMPLISHMENT
   return (
     <Modal
