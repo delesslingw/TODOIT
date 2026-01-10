@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
 import { ACCOMPLISHMENT, RUNNING } from '../hooks/useStatus'
 import { useStatus } from '../hooks/useStatus'
+import { useSessionState } from '../hooks/useSessionState'
 
 const StartButton = ({duration}) => {
   const {status, setStatus} = useStatus()
   const [startTime, setStartTime] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
+  const {setCompletedTimeString} = useSessionState()
   useEffect(() => {
     if(status.status === RUNNING && startTime === null){
       console.log("STARTING TIMER")
@@ -29,6 +31,10 @@ const StartButton = ({duration}) => {
       {
         text: 'End Session',
         onPress: () => {
+          // TODO: Change to sane amount
+          if(elapsedMs > 1000){
+            setCompletedTimeString(minutesAndSecondsFromMs(elapsedMs).timeString)
+          }
           setStartTime(null)
       setElapsedMs(0)
       setStatus({status: ACCOMPLISHMENT})
@@ -48,10 +54,11 @@ const StartButton = ({duration}) => {
     return () => clearInterval(interval)
   }, [startTime])
 
-  const minutes = Math.floor((totalMs - elapsedMs) / 60000)
-  const seconds = Math.floor(((totalMs - elapsedMs) % 60000) / 1000)
+  const {minutes, seconds} = minutesAndSecondsFromMs(totalMs - elapsedMs)
+
   useEffect(() => {
     if(minutes <= 0 & seconds < 0){
+        setCompletedTimeString(minutesAndSecondsFromMs(elapsedMs).timeString)
         setStartTime(null)
         setElapsedMs(0)
         setStatus({status: ACCOMPLISHMENT})
@@ -83,11 +90,20 @@ const StartButton = ({duration}) => {
       ) : (
         <Text
           style={{ color: '#111', fontSize: 30, textAlignVertical: "center" }}
-        >{formatTime(minutes, seconds)}</Text>
+        >{minutesAndSecondsFromMs(totalMs - elapsedMs).timeString}</Text>
       )}
     </TouchableOpacity>
   )
 }
+  function minutesAndSecondsFromMs(ms) {
+    const minutes = Math.floor((ms) / 60000)
+    const seconds = Math.floor(((ms) % 60000) / 1000)
+    return {
+      minutes,
+      seconds,
+      timeString: formatTime(minutes, seconds)
+    }
+  }
 function formatTime(minutes, seconds) {
   return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}`: seconds}`
 }

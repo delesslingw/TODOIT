@@ -9,6 +9,7 @@ import SplashLoadingScreen from './Components/SplashLoadingScreen'
 import StartButton from './Components/StartButton'
 import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
 import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
+import { SessionStateProvider } from './hooks/useSessionState'
 import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
 import { useTasks } from './hooks/useTasks'
 // ...
@@ -84,7 +85,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <StatusProvider>
-        <AppView />
+        <SessionStateProvider>
+          <AppView />
+        </SessionStateProvider>
       </StatusProvider>
     </QueryClientProvider>
   )
