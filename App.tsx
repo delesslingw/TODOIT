@@ -5,8 +5,8 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
+import { View } from 'react-native'
 
 import Accomplishment from './Components/Accomplishment'
 import Lists from './Components/Lists'
@@ -20,12 +20,20 @@ import { GTask, GTaskList, listTaskLists, listTasks } from './googleTasksApi'
 import { getAccessTokenOrThrow } from './googleToken'
 import SplashLoadingScreen from './Screens/SplashLoadingScreen'
 import { RUNNING, SessionPhase } from './state/session'
+import { useForceOtaOnLaunch } from './useForceOtaOnLaunch'
 
 function AppView() {
+  // OTA gate
+  const otaReady = useForceOtaOnLaunch()
+
+  // Session/UI state
   const [status, setStatus] = useState<SessionPhase>({ status: 'IDLE' })
   const [connected, setConnected] = useState(false)
+
+  // Auth state
   const [authBooting, setAuthBooting] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+
   const started = status.status === RUNNING
 
   useEffect(() => {
@@ -39,9 +47,7 @@ function AppView() {
         if (!alive) return
 
         if (token) {
-          setTimeout(() => {
-            setConnected(true)
-          }, 2000)
+          setTimeout(() => setConnected(true), 2000)
         }
       } catch (err) {
         if (!alive) return
@@ -57,10 +63,24 @@ function AppView() {
     }
   }, [])
 
-  // ✅ Iteration 1: Fetch tasklists via React Query
+  async function connect() {
+    try {
+      setAuthError(null)
+      setAuthBooting(true)
+      const token = await connectGoogle()
+      console.log('token ok:', token.slice(0, 10))
+      setTimeout(() => setConnected(true), 2000)
+    } catch (err) {
+      setAuthError(String(err))
+    } finally {
+      setAuthBooting(false)
+    }
+  }
+
+  // ✅ React Query hooks must be called EVERY render
   const taskListsQuery = useQuery({
     queryKey: ['tasklists'],
-    enabled: connected, // don’t run until user has authenticated
+    enabled: otaReady && connected,
     queryFn: async (): Promise<GTaskList[]> => {
       const token = await getAccessTokenOrThrow()
       const listsRes = await listTaskLists(token)
@@ -69,13 +89,13 @@ function AppView() {
     staleTime: 30_000,
     refetchInterval: 60_000,
   })
+
   const taskLists: GTaskList[] = taskListsQuery.data ?? []
 
-  // Fetch tasks for each list (in parallel)
   const tasksQueries = useQueries({
     queries: taskLists.map((l) => ({
       queryKey: ['tasks', l.id],
-      enabled: connected && taskListsQuery.isSuccess,
+      enabled: otaReady && connected && taskListsQuery.isSuccess,
       queryFn: async (): Promise<GTask[]> => {
         const token = await getAccessTokenOrThrow()
         const res = await listTasks(token, l.id, { showCompleted: false })
@@ -88,44 +108,45 @@ function AppView() {
   const anyTasksLoading = tasksQueries.some((q) => q.isLoading)
   const anyTasksError = tasksQueries.find((q) => q.isError)?.error
 
-  // Shape data into what <Lists /> already expects: { [title]: { id, tasks } }
-  const listsForUI: Record<string, { id: string; tasks: GTask[] }> = {}
-  taskLists.forEach((l, idx) => {
-    const tasks = tasksQueries[idx]?.data ?? []
-    // If titles ever collide, this still stays stable-ish by including a short id suffix
-    const key = listsForUI[l.title]
-      ? `${l.title} (${l.id.slice(0, 4)})`
-      : l.title
-    listsForUI[key] = { id: l.id, tasks }
-  })
+  // 🔒 IMPORTANT: avoid the one-render flicker by keying off query status
+  // Once connected, we consider "data booting" until tasklists are SUCCESS and tasks are done loading.
+  const dataBooting =
+    connected && (taskListsQuery.status !== 'success' || anyTasksLoading)
 
-  async function connect() {
-    try {
-      setAuthError(null)
-      setAuthBooting(true)
-      const token = await connectGoogle()
-      console.log('token ok:', token.slice(0, 10))
-      setTimeout(() => {
-        setConnected(true)
-      }, 2000)
-    } catch (err) {
-      setAuthError(String(err))
-    } finally {
-      setAuthBooting(false)
-    }
-  }
+  const dataError =
+    (taskListsQuery.isError ? taskListsQuery.error : null) ?? anyTasksError
 
-  if (!connected) {
+  // Show splash if:
+  // - OTA is still checking
+  // - auth is booting
+  // - user is not connected yet (so they can press AUTH)
+  // - OR data is still loading after connecting
+  const showSplash = !otaReady || authBooting || !connected || dataBooting
+
+  // But only disable the AUTH button when we are actually "busy"
+  // (not just because we're waiting for the user to press AUTH)
+  const splashBusy = !otaReady || authBooting || dataBooting
+
+  const listsForUI = useMemo(() => {
+    const out: Record<string, { id: string; tasks: GTask[] }> = {}
+    taskLists.forEach((l, idx) => {
+      const tasks = tasksQueries[idx]?.data ?? []
+      const key = out[l.title] ? `${l.title} (${l.id.slice(0, 4)})` : l.title
+      out[key] = { id: l.id, tasks }
+    })
+    return out
+  }, [taskLists, tasksQueries])
+
+  if (showSplash) {
     return (
       <SplashLoadingScreen
-        authError={authError}
-        authBooting={authBooting}
+        authError={dataError ? String(dataError) : authError}
+        authBooting={splashBusy}
         connect={connect}
       />
     )
   }
 
-  // Connected view
   return (
     <>
       <View
@@ -135,7 +156,6 @@ function AppView() {
           flex: 1,
         }}
       >
-        <Text>HELLO DOLLY</Text>
         <View style={{ alignItems: 'center', marginVertical: 35 }}>
           <StartButton
             status={status}

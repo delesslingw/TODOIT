@@ -29,10 +29,11 @@ const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
       />
       <Pressable
         onPress={connect}
-        disabled={!authError}
+        disabled={false}
         style={{
           opacity: authBooting ? 0.5 : 1,
-          backgroundColor: authError ? getRandomizedLightColors()[0] : '#bbb',
+          // backgroundColor: authError ? getRandomizedLightColors()[0] : '#bbb',
+          backgroundColor: getRandomizedLightColors()[0],
           paddingHorizontal: 35,
           paddingVertical: 20,
         }}
