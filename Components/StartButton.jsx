@@ -1,11 +1,11 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { useEffect, useState } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
-import { ACCOMPLISHMENT, RUNNING } from '../state/session'
+import { ACCOMPLISHMENT, RUNNING } from '../hooks/useStatus'
 import { useStatus } from '../hooks/useStatus'
-const StartButton = () => {
+
+const StartButton = ({duration}) => {
   const {status, setStatus} = useStatus()
-  const timerLength = 1
   const [startTime, setStartTime] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   useEffect(() => {
@@ -36,7 +36,7 @@ const StartButton = () => {
 
       },
     ]);
-  const totalMs = 60 * 1000 * timerLength
+  const totalMs = 60 * 1000 * duration
   useEffect(() => {
     if (!started) return
 
