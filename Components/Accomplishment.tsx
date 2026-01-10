@@ -1,7 +1,8 @@
 import { Image } from 'expo-image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { getRandomizedColors } from '../colors'
+import useNotification from '../hooks/useNotification'
 import { useSessionState } from '../hooks/useSessionState'
 import { ACCOMPLISHMENT, IDLE, useStatus } from '../hooks/useStatus'
 
@@ -9,11 +10,19 @@ const Accomplishment = () => {
   const { status, setStatus } = useStatus()
   const { tasksCompleted, resetTasksCompleted, completedTimeString } =
     useSessionState()
+  const { notify } = useNotification()
   const visible = status.status === ACCOMPLISHMENT
   const handleClose = () => {
     resetTasksCompleted()
     setStatus({ status: IDLE })
   }
+  useEffect(() => {
+    notify({
+      title: 'Pomodoro complete',
+      body: 'Time’s up.',
+      channelId: 'pomodoro',
+    })
+  }, [])
   return (
     <Modal
       animationType='slide'
