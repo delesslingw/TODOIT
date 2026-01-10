@@ -6,36 +6,55 @@ import {
 } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 
-import { getRandomizedLightColors } from './colors'
 import Accomplishment from './Components/Accomplishment'
 import Lists from './Components/Lists'
 import StartButton from './Components/StartButton'
-import dummyTasks, { dummyTasks2 } from './dummyTasks'
-import { connectGoogle, initGoogleAuth } from './googleAuth'
+import {
+  connectGoogle,
+  initGoogleAuth,
+  trySilentGoogleConnect,
+} from './googleAuth'
 import { GTask, GTaskList, listTaskLists, listTasks } from './googleTasksApi'
 import { getAccessTokenOrThrow } from './googleToken'
+import SplashLoadingScreen from './Screens/SplashLoadingScreen'
 import { RUNNING, SessionPhase } from './state/session'
-
-const dummyLists = {
-  General: {
-    id: '12345',
-    tasks: dummyTasks,
-  },
-  Finances: {
-    id: 'abcde',
-    tasks: dummyTasks2,
-  },
-}
 
 function AppView() {
   const [status, setStatus] = useState<SessionPhase>({ status: 'IDLE' })
   const [connected, setConnected] = useState(false)
+  const [authBooting, setAuthBooting] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
   const started = status.status === RUNNING
 
   useEffect(() => {
-    initGoogleAuth()
+    let alive = true
+
+    ;(async () => {
+      try {
+        initGoogleAuth()
+
+        const token = await trySilentGoogleConnect()
+        if (!alive) return
+
+        if (token) {
+          setTimeout(() => {
+            setConnected(true)
+          }, 2000)
+        }
+      } catch (err) {
+        if (!alive) return
+        setAuthError(String(err))
+      } finally {
+        if (!alive) return
+        setAuthBooting(false)
+      }
+    })()
+
+    return () => {
+      alive = false
+    }
   }, [])
 
   // ✅ Iteration 1: Fetch tasklists via React Query
@@ -48,6 +67,7 @@ function AppView() {
       return listsRes.items ?? []
     },
     staleTime: 30_000,
+    refetchInterval: 60_000,
   })
   const taskLists: GTaskList[] = taskListsQuery.data ?? []
 
@@ -80,35 +100,28 @@ function AppView() {
   })
 
   async function connect() {
-    // This prompts the Google auth UI (user gesture) and establishes sign-in.
-    const token = await connectGoogle()
-    console.log('token ok:', token.slice(0, 10))
-    setConnected(true)
-    // No manual fetching here anymore — React Query will fetch automatically.
+    try {
+      setAuthError(null)
+      setAuthBooting(true)
+      const token = await connectGoogle()
+      console.log('token ok:', token.slice(0, 10))
+      setTimeout(() => {
+        setConnected(true)
+      }, 2000)
+    } catch (err) {
+      setAuthError(String(err))
+    } finally {
+      setAuthBooting(false)
+    }
   }
 
   if (!connected) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: 'white',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <Pressable
-          onPress={connect}
-          style={{
-            backgroundColor: getRandomizedLightColors()[0],
-            paddingHorizontal: 35,
-            paddingVertical: 20,
-          }}
-        >
-          <Text>AUTH</Text>
-        </Pressable>
-      </View>
+      <SplashLoadingScreen
+        authError={authError}
+        authBooting={authBooting}
+        connect={connect}
+      />
     )
   }
 
@@ -122,36 +135,12 @@ function AppView() {
           flex: 1,
         }}
       >
+        <Text>HELLO DOLLY</Text>
         <View style={{ alignItems: 'center', marginVertical: 35 }}>
           <StartButton
             status={status}
             setStatus={(st: SessionPhase) => setStatus(st)}
           />
-        </View>
-
-        {/* TEMP: show query state so we can confirm it’s working */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-          {taskListsQuery.isLoading ? (
-            <Text style={{ color: started ? '#fff' : '#111' }}>
-              Loading tasklists…
-            </Text>
-          ) : taskListsQuery.isError ? (
-            <Text style={{ color: started ? '#fff' : '#111' }}>
-              Error loading tasklists: {String(taskListsQuery.error)}
-            </Text>
-          ) : anyTasksLoading ? (
-            <Text style={{ color: started ? '#fff' : '#111' }}>
-              Loading tasks…
-            </Text>
-          ) : anyTasksError ? (
-            <Text style={{ color: started ? '#fff' : '#111' }}>
-              Error loading tasks: {String(anyTasksError)}
-            </Text>
-          ) : (
-            <Text style={{ color: started ? '#fff' : '#111' }}>
-              Loaded {taskLists.length} lists
-            </Text>
-          )}
         </View>
 
         <Lists status={status} setStatus={setStatus} lists={listsForUI} />
