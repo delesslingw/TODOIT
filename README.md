@@ -7,6 +7,11 @@
 
 
 ## TODO
+- [ ] Pull down refresh
+- [ ] add options for list with delete list capabilities
+- [ ]
+- [ ] Add notifications
+- [ ] Fix scroll in Task Lists
 - [ ] Add gesture close for ACCOMPLISHMENT
 - [ ] Add delete task functionality
 - [ ] add edit task functionality

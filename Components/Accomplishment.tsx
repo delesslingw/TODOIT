@@ -2,11 +2,18 @@ import { Image } from 'expo-image'
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { getRandomizedColors } from '../colors'
+import { useSessionState } from '../hooks/useSessionState'
 import { ACCOMPLISHMENT, IDLE, useStatus } from '../hooks/useStatus'
 
 const Accomplishment = () => {
   const { status, setStatus } = useStatus()
+  const { tasksCompleted, resetTasksCompleted, completedTimeString } =
+    useSessionState()
   const visible = status.status === ACCOMPLISHMENT
+  const handleClose = () => {
+    resetTasksCompleted()
+    setStatus({ status: IDLE })
+  }
   return (
     <Modal
       animationType='slide'
@@ -33,6 +40,10 @@ const Accomplishment = () => {
         >
           YOU DID IT!!!!1
         </Text>
+        <Text>
+          You completed {tasksCompleted} tasks in {completedTimeString}!!
+        </Text>
+
         <ShroomGif />
         <Pressable
           style={{
@@ -40,7 +51,7 @@ const Accomplishment = () => {
             paddingHorizontal: 35,
             paddingVertical: 20,
           }}
-          onPress={() => setStatus({ status: IDLE })}
+          onPress={handleClose}
         >
           <Text style={{ fontSize: 18, fontWeight: 'bold' }}>LET'S GO!!</Text>
         </Pressable>

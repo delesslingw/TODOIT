@@ -29,7 +29,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { IDLE, RUNNING, SessionPhase } from '../hooks/useStatus'
+import { useSessionState } from '../hooks/useSessionState'
+import { ACCOMPLISHMENT, RUNNING, SessionPhase } from '../hooks/useStatus'
 import { useToggleComplete } from '../hooks/useToggleComplete'
 
 type GoogleTaskStatus = 'needsAction' | 'completed'
@@ -57,7 +58,7 @@ const Task = ({
   // const editTask = useEditTask(listId)
   // Menu state
   const [showMenu, setShowMenu] = useState(false)
-
+  const { incrementTasksCompleted } = useSessionState()
   // “Checked” is derived from Google task state (single source of truth)
   const isChecked = taskStatus === 'completed'
 
@@ -96,7 +97,7 @@ const Task = ({
         {
           text: 'End Session',
           onPress: () => {
-            setStatus({ status: IDLE })
+            setStatus({ status: ACCOMPLISHMENT })
           },
         },
       ]
@@ -120,6 +121,7 @@ const Task = ({
       taskId: id,
       completed: nextChecked,
     })
+    incrementTasksCompleted()
 
     // Preserve your existing “highlighted task checked prompts end/continue”
     if (highlighted && nextChecked) {
@@ -135,6 +137,7 @@ const Task = ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: 16,
       }}
     >
       <View

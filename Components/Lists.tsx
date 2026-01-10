@@ -1,5 +1,5 @@
 import AntDesign from '@expo/vector-icons/AntDesign'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Dimensions, Pressable, Text, View } from 'react-native'
 import Dialog from 'react-native-dialog'
 import Animated, {
@@ -9,7 +9,6 @@ import Animated, {
 import Carousel from 'react-native-reanimated-carousel'
 import { useStatus } from '../hooks/useStatus'
 import TaskView from './TaskView'
-
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 type Props = {
@@ -20,10 +19,10 @@ type Props = {
 export default function Lists({ lists, onAddTask }: Props) {
   const listNames = useMemo(() => Object.keys(lists ?? {}), [lists])
   const data = useMemo(() => listNames, [listNames])
-
+  const [activeIndex, setActiveIndex] = useState(0)
   const PAGE_WIDTH = SCREEN_WIDTH
   const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9)
-  const CAROUSEL_HEIGHT = Math.round(SCREEN_HEIGHT * 0.78)
+  const CAROUSEL_HEIGHT = Math.round(SCREEN_HEIGHT * 0.68)
 
   if (!data.length) {
     return (
@@ -41,11 +40,16 @@ export default function Lists({ lists, onAddTask }: Props) {
       loop
       pagingEnabled
       mode='parallax'
+      onConfigurePanGesture={(gesture) => {
+        'worklet'
+        gesture.activeOffsetX([-20, 20]).failOffsetY([-10, 10])
+      }}
       modeConfig={{
         parallaxScrollingScale: 0.92,
         parallaxScrollingOffset: 60,
         parallaxAdjacentItemScale: 0.82,
       }}
+      onSnapToItem={setActiveIndex}
       renderItem={({ item: listName, index }) => (
         <ListCard
           key={listName}
@@ -55,6 +59,7 @@ export default function Lists({ lists, onAddTask }: Props) {
           list={lists[listName]}
           cardWidth={CARD_WIDTH}
           onAddTask={onAddTask}
+          isActive={activeIndex === index}
         />
       )}
     />
@@ -68,6 +73,7 @@ function ListCard({
   total,
   cardWidth,
   onAddTask,
+  isActive,
 }: {
   listName: string
   list: { id: string; tasks: any[] }
@@ -75,12 +81,15 @@ function ListCard({
   total: number
   cardWidth: number
   onAddTask: (listId: string, title: string) => Promise<void>
+  isActive: boolean
 }) {
   const { status, setStatus } = useStatus()
   const [showDialog, setShowDialog] = useState(false)
   const [taskTitle, setTaskTitle] = useState('')
   const rotation = useSharedValue(0)
-
+  useEffect(() => {
+    if (!isActive) return
+  }, [isActive])
   const handleAddTask = async () => {
     const trimmed = taskTitle.trim()
     if (!trimmed) return
@@ -94,7 +103,14 @@ function ListCard({
   }))
 
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}
+    >
       <View
         style={{
           width: cardWidth,
@@ -115,9 +131,27 @@ function ListCard({
             alignItems: 'center',
           }}
         >
-          <Text style={{ color: 'black', fontSize: 24, fontWeight: '700' }}>
-            {listName}
-          </Text>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              position: 'relative',
+            }}
+          >
+            <Text style={{ color: 'black', fontSize: 24, fontWeight: '700' }}>
+              {listName}
+            </Text>
+            {/* <Image
+              source={require('../assets/gifs/encouragingShroom.gif')}
+              style={{
+                width: 75,
+                height: 75,
+                position: 'absolute',
+              }}
+              contentFit='contain'
+            /> */}
+          </View>
 
           <Animated.View style={plusStyle}>
             <Pressable onPress={() => setShowDialog(true)}>
