@@ -4,10 +4,13 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "scopes": ["https://www.googleapis.com/auth/tasks"],
+          "scopes": [
+            "https://www.googleapis.com/auth/tasks"
+          ],
           "iosUrlScheme": "com.googleusercontent.apps.314267464804-tfv0et97to5unkctrnjqf92fvsbo9cb7"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "name": "TODOIT",
     "slug": "todoit",
@@ -16,17 +19,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-
     "splash": {
       "image": "./assets/adaptive-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "supportsTablet": true
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -35,21 +35,17 @@
       "edgeToEdgeEnabled": true,
       "package": "studio.delesslin.todoit"
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "extra": {
       "eas": {
         "projectId": "c22aecfd-5842-4ec1-af2e-1fa3256ebb19"
       }
     },
-
     "runtimeVersion": {
       "policy": "appVersion"
     },
-
     "updates": {
       "url": "https://u.expo.dev/c22aecfd-5842-4ec1-af2e-1fa3256ebb19",
       "checkAutomatically": "ON_LOAD",
