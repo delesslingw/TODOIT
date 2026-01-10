@@ -1,9 +1,14 @@
-import React, { useMemo } from 'react'
-import { Dimensions, Text, View } from 'react-native'
+import AntDesign from '@expo/vector-icons/AntDesign'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Dimensions, Pressable, Text, TextInput, View } from 'react-native'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
 import Carousel from 'react-native-reanimated-carousel'
 import { useStatus } from '../hooks/useStatus'
 import TaskView from './TaskView' // adjust path
-
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 type Task = any
@@ -17,10 +22,11 @@ type ListsShape = Record<
 >
 
 type Props = {
-  lists: ListsShape
+  lists: Record<string, { id: string; tasks: any[] }>
+  onAddTask: (listId: string, title: string) => Promise<void>
 }
 
-function Lists({ lists }: Props) {
+function Lists({ lists, onAddTask }: Props) {
   // Derived list “pages” from the object keys (order will be insertion order)
   const listNames = useMemo(() => Object.keys(lists ?? {}), [lists])
   const data = useMemo(() => listNames, [listNames])
@@ -68,8 +74,19 @@ function Lists({ lists }: Props) {
             .failOffsetY([-10, 10]) // if user moves vertically early, give up
         }}
         renderItem={({ item: listName, index }) => {
+          const [showInput, setShowInput] = useState(false)
           const list = lists[listName]
-
+          const rotation = useSharedValue(0)
+          useEffect(() => {
+            if (showInput) {
+              rotation.value = withSpring(-45)
+            } else {
+              rotation.value = withSpring(0)
+            }
+          }, [showInput])
+          const animatedStyle = useAnimatedStyle(() => ({
+            transform: [{ rotateZ: `${rotation.value}deg` }],
+          }))
           return (
             <View
               style={{
@@ -89,7 +106,16 @@ function Lists({ lists }: Props) {
                 }}
               >
                 {/* Header */}
-                <View style={{ marginBottom: 18, paddingHorizontal: 16 }}>
+                <View
+                  style={{
+                    marginBottom: 18,
+                    paddingHorizontal: 16,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Text
                     style={{
                       color: 'black',
@@ -99,10 +125,21 @@ function Lists({ lists }: Props) {
                   >
                     {listName}
                   </Text>
+                  <Animated.View style={animatedStyle}>
+                    <Pressable onPress={() => setShowInput((bool) => !bool)}>
+                      <AntDesign name='plus' size={24} color='black' />
+                    </Pressable>
+                  </Animated.View>
                 </View>
 
                 {/* Tasks */}
                 <View style={{ flex: 1 }}>
+                  <Input
+                    show={showInput}
+                    taskListId={list.id}
+                    close={() => setShowInput(false)}
+                    onSubmit={(title) => onAddTask(list.id, title)}
+                  />
                   <TaskView
                     tasks={list?.tasks ?? []}
                     status={status}
@@ -132,4 +169,49 @@ function Lists({ lists }: Props) {
   )
 }
 
+function Input({
+  show,
+  taskListId,
+  close,
+  onSubmit,
+}: {
+  show: boolean
+  taskListId: string
+  close: () => void
+  onSubmit: (title: string) => Promise<void>
+}) {
+  const [text, setText] = useState('')
+  const height = useSharedValue(0)
+
+  const handleSubmit = async () => {
+    try {
+      await onSubmit(text)
+      height.value = withSpring(0)
+      setText('')
+    } catch (e) {
+      console.error('Error submitting new task: ', e)
+    }
+  }
+  useEffect(() => {
+    if (show) {
+      height.value = withSpring(90)
+    } else {
+      height.value = withSpring(0)
+    }
+  }, [show])
+  return (
+    <Animated.View style={{ backgroundColor: 'white', height }}>
+      <TextInput
+        style={{}}
+        onChangeText={setText}
+        value={text}
+        placeholder='Your task'
+        onSubmitEditing={() => {
+          console.log('done?')
+          handleSubmit()
+        }}
+      />
+    </Animated.View>
+  )
+}
 export default Lists
