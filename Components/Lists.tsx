@@ -83,26 +83,21 @@ function Lists({ lists, status, setStatus }: Props) {
                   width: CARD_WIDTH,
                   flex: 1,
                   paddingTop: 16,
-                  paddingBottom: 100,
+                  paddingBottom: 130,
                   overflow: 'hidden',
                   backgroundColor: '#bbb',
                 }}
               >
                 {/* Header */}
-                <View style={{ marginBottom: 12, paddingHorizontal: 16 }}>
+                <View style={{ marginBottom: 32, paddingHorizontal: 16 }}>
                   <Text
                     style={{
                       color: 'black',
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: '700',
                     }}
                   >
                     {listName}
-                  </Text>
-
-                  {/* optional: show id (or remove) */}
-                  <Text style={{ color: 'rgba(0,0,0,0.65)', marginTop: 4 }}>
-                    {list?.id}
                   </Text>
                 </View>
 
@@ -112,6 +107,7 @@ function Lists({ lists, status, setStatus }: Props) {
                     tasks={list?.tasks ?? []}
                     status={status}
                     setStatus={setStatus}
+                    listId={list.id}
                   />
                 </View>
 
