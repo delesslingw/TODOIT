@@ -7,8 +7,10 @@ import Lists from './Components/Lists'
 import Menu, { MenuButton } from './Components/Menu'
 import SplashLoadingScreen from './Components/SplashLoadingScreen'
 import StartButton from './Components/StartButton'
+import { TODOIT_CHANNELS } from './helpers/consts'
 import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
 import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
+import { NotificationProvider } from './hooks/useNotification'
 import { SessionStateProvider } from './hooks/useSessionState'
 import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
 import { useTasks } from './hooks/useTasks'
@@ -83,12 +85,14 @@ const queryClient = new QueryClient()
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusProvider>
-        <SessionStateProvider>
-          <AppView />
-        </SessionStateProvider>
-      </StatusProvider>
-    </QueryClientProvider>
+    <NotificationProvider channels={TODOIT_CHANNELS}>
+      <QueryClientProvider client={queryClient}>
+        <StatusProvider>
+          <SessionStateProvider>
+            <AppView />
+          </SessionStateProvider>
+        </StatusProvider>
+      </QueryClientProvider>
+    </NotificationProvider>
   )
 }
