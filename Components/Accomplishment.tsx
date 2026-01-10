@@ -18,8 +18,8 @@ const Accomplishment = () => {
   }
   useEffect(() => {
     notify({
-      title: 'Pomodoro complete',
-      body: 'Time’s up.',
+      title: 'Congrats!',
+      body: `You completed ${tasksCompleted} tasks in ${completedTimeString}!!`,
       channelId: 'pomodoro',
     })
   }, [])
