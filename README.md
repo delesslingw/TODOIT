@@ -1,9 +1,10 @@
 # TODOIT
 
 ## Important Commands
-- `eas build -p android --profile preview`
-- `eas build -p android --profile preview --local`
-- `npx eas update --channel preview --message "Your Message"`
+- Build Dev Client: `eas build -p android --profile development`
+- Build Standalone Preview : `eas build -p android --profile preview`
+- Build Preview Locally (untested): `eas build -p android --profile preview --local`
+- Push OTA JS Update: `npx eas update --channel preview --message "Your Message"`
 
 
 ## TODO
