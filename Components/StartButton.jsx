@@ -1,80 +1,71 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
-import { ACCOMPLISHMENT, RUNNING } from '../hooks/useStatus'
-import { useStatus } from '../hooks/useStatus'
 import { useSessionState } from '../hooks/useSessionState'
+import { ACCOMPLISHMENT, RUNNING, useStatus } from '../hooks/useStatus'
+import useTimer from '../hooks/useTimer'
 
-const StartButton = ({duration}) => {
-  const {status, setStatus} = useStatus()
-  const [startTime, setStartTime] = useState(null)
-  const [elapsedMs, setElapsedMs] = useState(0)
-  const {setCompletedTimeString} = useSessionState()
-  useEffect(() => {
-    if(status.status === RUNNING && startTime === null){
-      console.log("STARTING TIMER")
-      setStartTime(new Date())
-    }
-  }, [status])
-  const started = status.status === RUNNING
+const StartButton = ({ duration }) => {
+  const { status, setStatus } = useStatus()
+  const { setTimer, timerActive, timer, clearTimer } = useTimer()
+  const { setCompletedTimeString } = useSessionState()
+
+  const didCompleteRef = useRef(false)
+
   const handleStartPress = () => {
-    if (!started) {
-      setStartTime(new Date())
-      setStatus({status: RUNNING, highlightedTaskId: null})
+    if (!timerActive) {
+      didCompleteRef.current = false
+      setTimer(duration * 60 * 1000)
+      setStatus({ status: RUNNING, highlightedTaskId: null })
     } else {
       createCancelAlert()
     }
   }
+
   const createCancelAlert = () =>
     Alert.alert('End Session?', 'Would you like to end your session?', [
-      {text: 'Continue Session', onPress: () => null,},
+      { text: 'Continue Session', onPress: () => null },
       {
         text: 'End Session',
         onPress: () => {
-          // TODO: Change to sane amount
-          if(elapsedMs > 1000){
-            setCompletedTimeString(minutesAndSecondsFromMs(elapsedMs).timeString)
+          const { timeString, ms } = timer.elapsed
+          setCompletedTimeString(timeString)
+          clearTimer()
+          if (ms < 1000) {
+            setStatus({ status: IDLE })
+          }else{
+            setStatus({status: ACCOMPLISHMENT})
           }
-          setStartTime(null)
-      setElapsedMs(0)
-      setStatus({status: ACCOMPLISHMENT})
         },
-
       },
-    ]);
-  const totalMs = 60 * 1000 * duration
-  useEffect(() => {
-    if (!started) return
-
-    const interval = setInterval(() => {
-
-      setElapsedMs(Date.now() - startTime.getTime())
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [startTime])
-
-  const {minutes, seconds} = minutesAndSecondsFromMs(totalMs - elapsedMs)
+    ])
 
   useEffect(() => {
-    if(minutes <= 0 & seconds < 0){
-        setCompletedTimeString(minutesAndSecondsFromMs(elapsedMs).timeString)
-        setStartTime(null)
-        setElapsedMs(0)
-        setStatus({status: ACCOMPLISHMENT})
-
+    if (!timerActive) {
+      didCompleteRef.current = false
+      return
     }
-  }, [minutes, seconds])
+    if (timer.remaining.ms > 0) return
+    if (didCompleteRef.current) return
+
+    didCompleteRef.current = true
+
+    setCompletedTimeString(timer.elapsed.timeString)
+    clearTimer()
+    setStatus({ status: ACCOMPLISHMENT })
+  }, [
+    timerActive,
+    timer.remaining.ms,
+    timer.elapsed.timeString,
+    clearTimer,
+    setStatus,
+    setCompletedTimeString,
+  ])
+
   return (
     <TouchableOpacity
       style={[
-        !started
-          ? {
-              backgroundColor: '#333',
-            }
-          : {
-              backgroundColor: '#fff',
-            },
+        !timerActive ? { backgroundColor: '#333' } : { backgroundColor: '#fff' },
         {
           justifyContent: 'center',
           alignItems: 'center',
@@ -85,26 +76,15 @@ const StartButton = ({duration}) => {
       ]}
       onPress={handleStartPress}
     >
-      {startTime == null ? (
-        <FontAwesome name='play' size={50} color='#fff'></FontAwesome>
+      {!timerActive ? (
+        <FontAwesome name="play" size={50} color="#fff" />
       ) : (
-        <Text
-          style={{ color: '#111', fontSize: 30, textAlignVertical: "center" }}
-        >{minutesAndSecondsFromMs(totalMs - elapsedMs).timeString}</Text>
+        <Text style={{ color: '#111', fontSize: 30, textAlignVertical: 'center' }}>
+          {timer.remaining.timeString}
+        </Text>
       )}
     </TouchableOpacity>
   )
 }
-  function minutesAndSecondsFromMs(ms) {
-    const minutes = Math.floor((ms) / 60000)
-    const seconds = Math.floor(((ms) % 60000) / 1000)
-    return {
-      minutes,
-      seconds,
-      timeString: formatTime(minutes, seconds)
-    }
-  }
-function formatTime(minutes, seconds) {
-  return `${minutes < 10 ? `0${minutes}` : minutes}:${seconds < 10 ? `0${seconds}`: seconds}`
-}
+
 export default StartButton

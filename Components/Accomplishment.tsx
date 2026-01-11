@@ -17,11 +17,16 @@ const Accomplishment = () => {
     setStatus({ status: IDLE })
   }
   useEffect(() => {
-    notify({
-      title: 'Congrats!',
-      body: `You completed ${tasksCompleted} tasks in ${completedTimeString}!!`,
-      channelId: 'pomodoro',
-    })
+    if (visible) {
+      console.log('NOTIFYING!')
+      notify({
+        title: 'Congrats!',
+        body: `You completed ${tasksCompleted} tasks in ${completedTimeString}!!`,
+        channelId: 'pomodoro',
+      })
+        .then(console.log)
+        .catch(console.error)
+    }
   }, [])
   return (
     <Modal
