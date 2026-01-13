@@ -3,15 +3,18 @@
 ## Important Commands
 - Build Dev Client: `eas build -p android --profile development`
 - Build Standalone Preview : `eas build -p android --profile preview`
-- Build Preview Locally (untested): `eas build -p android --profile preview --local`
+- Build Preview Locally: `eas build --platform android --local --profile preview`
+  - If you run into metaspace issues consider running:
+    - `export JAVA_TOOL_OPTIONS="-XX:MaxMetaspaceSize=1024m"
+      export GRADLE_OPTS="-Dorg.gradle.jvmargs='-Xmx4g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8'"
+      export KOTLIN_DAEMON_JVMARGS="-Xmx2g -XX:MaxMetaspaceSize=1024m"
+      export NODE_OPTIONS="--max-old-space-size=8192"
 - Push OTA JS Update: `npx eas update --channel preview --message "Your Message"`
 
 
 ## TODO
 - [ ] Pull down refresh
 - [ ] add options for list with delete list capabilities
-- [ ]
-- [ ] Add notifications
 - [ ] Fix scroll in Task Lists
 - [ ] Add gesture close for ACCOMPLISHMENT
 - [ ] Add delete task functionality

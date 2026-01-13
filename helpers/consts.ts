@@ -3,14 +3,14 @@ export const TODOIT_CHANNELS = [
     id: 'pomodoro',
     name: 'Pomodoro',
     importance: 'high',
-    sound: true,
+    sound: 'default',
     vibration: true,
   },
   {
     id: 'default',
     name: 'General',
     importance: 'default',
-    sound: true,
+    sound: 'default',
     vibration: false,
   },
 ] as const

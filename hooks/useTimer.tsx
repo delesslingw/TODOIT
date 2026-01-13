@@ -23,12 +23,14 @@ type TimerSnapshot = {
 // TODO: refactor to timer.set, timer.clear, timer.elapsed, etc
 type ContextType = {
   /** Starts (or restarts) a timer that ends at now + durationInMs. */
-  setTimer: (durationInMs: number) => void
+  setTimer: () => void
   /** Clears the current timer and cancels any scheduled "timer complete" notification. */
   clearTimer: () => void
   /** Live wall-clock snapshot, updated by the provider while timerActive. */
   timer: TimerSnapshot
   timerActive: boolean
+  setDurationInMs: (durationInMs: number) => void
+  durationInMs: number
 }
 
 const TimerContext = createContext<ContextType | null>(null)
@@ -37,7 +39,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
   const [targetTime, setTargetTime] = useState<Date | null>(null)
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [timerActive, setTimerActive] = useState<boolean>(false)
-
+  const [durationInMs, setDurationInMs] = useState<number>(25 * 60 * 1000)
   // Provider-owned clock for UI refresh
   const [nowMs, setNowMs] = useState<number>(() => Date.now())
 
@@ -49,7 +51,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
    */
   const scheduledNotifIdRef = useRef<string | null>(null)
 
-  const setTimer = (durationInMs: number) => {
+  const setTimer = () => {
     // Cancel any previously scheduled notification
     if (scheduledNotifIdRef.current) {
       void cancelScheduled(scheduledNotifIdRef.current)
@@ -144,6 +146,8 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
     clearTimer,
     timer,
     timerActive,
+    setDurationInMs,
+    durationInMs,
   }
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>

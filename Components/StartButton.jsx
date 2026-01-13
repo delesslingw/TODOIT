@@ -5,7 +5,7 @@ import { useSessionState } from '../hooks/useSessionState'
 import { ACCOMPLISHMENT, RUNNING, useStatus } from '../hooks/useStatus'
 import useTimer from '../hooks/useTimer'
 
-const StartButton = ({ duration }) => {
+const StartButton = () => {
   const { status, setStatus } = useStatus()
   const { setTimer, timerActive, timer, clearTimer } = useTimer()
   const { setCompletedTimeString } = useSessionState()
@@ -15,7 +15,7 @@ const StartButton = ({ duration }) => {
   const handleStartPress = () => {
     if (!timerActive) {
       didCompleteRef.current = false
-      setTimer(duration * 60 * 1000)
+      setTimer()
       setStatus({ status: RUNNING, highlightedTaskId: null })
     } else {
       createCancelAlert()

@@ -1,13 +1,13 @@
 import { Pressable, Text } from 'react-native'
 
 import { Image } from 'expo-image'
-import Animated, { RollOutRight } from 'react-native-reanimated'
+import Animated, { SlideOutDown } from 'react-native-reanimated'
 import { getRandomizedLightColors } from '../colors'
 
 const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
   return (
     <Animated.View
-      exiting={RollOutRight.duration(1000).delay(2000)}
+      exiting={SlideOutDown.duration(1000).delay(2000)}
       style={{
         position: 'absolute',
         top: 0,

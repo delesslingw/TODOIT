@@ -2,13 +2,13 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import FontAwesome from '@react-native-vector-icons/fontawesome'
 import { Pressable, Text, View } from 'react-native'
 import Animated from 'react-native-reanimated'
+import useTimer from '../hooks/useTimer'
 type MenuProps = {
-  updateDuration: (arg0: number) => void
-  duration: number
   close: () => void
 }
-const Menu: React.FC<MenuProps> = ({ updateDuration, duration, close }) => {
+const Menu: React.FC<MenuProps> = ({ close }) => {
   const options = [1, 5, 10, 15, 20, 25]
+  const { durationInMs, setDurationInMs } = useTimer()
   return (
     <Animated.View
       style={{
@@ -59,10 +59,10 @@ const Menu: React.FC<MenuProps> = ({ updateDuration, duration, close }) => {
         <View>
           {options.map((opt: number) => {
             const label = opt === 1 ? `1 minute` : `${opt} minutes`
-            const isSelected = opt === duration
+            const isSelected = opt === durationInMs / 60 / 1000
             return (
               <Pressable
-                onPress={() => updateDuration(opt)}
+                onPress={() => setDurationInMs(opt * 60 * 1000)}
                 key={opt}
                 style={{
                   display: 'flex',
