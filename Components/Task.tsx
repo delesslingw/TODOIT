@@ -160,9 +160,10 @@ const Task = ({
         ) : (
           <TouchableOpacity
             disabled={disabled}
-            onPress={() =>
+            onPress={() => {
+              setTimer()
               setStatus({ status: RUNNING, highlightedTaskId: id })
-            }
+            }}
           >
             <FontAwesome name='play' size={20} color='#333' />
           </TouchableOpacity>
