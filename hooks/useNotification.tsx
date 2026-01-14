@@ -84,6 +84,17 @@ export type AndroidChannelSpec = {
   vibration?: boolean // default true
   /** Best-effort default at channel creation time. User can override in OS settings. */
   lights?: boolean // default false
+
+  /**
+   * Best-effort default at channel creation time.
+   * If true, Android may allow this channel to bypass Do Not Disturb.
+   *
+   * NOTE:
+   * - This does NOT override user muting the channel.
+   * - Users can toggle this in system settings.
+   * - Some devices/OS versions may restrict behavior.
+   */
+  bypassDnd?: boolean // default false
 }
 
 export type UseNotificationOptions = {
@@ -143,11 +154,6 @@ export type NotifyResult = {
 export type UseNotificationReturn = {
   permissionStatus: PermissionStatus
 
-  /**
-   * ensureReady()
-   * Idempotent: requests permission (optional) + ensures channels (optional).
-   * Useful if you want to control when permission prompts appear.
-   */
   ensureReady: (opts?: {
     requestPermission?: boolean
     ensureChannels?: boolean
@@ -156,46 +162,20 @@ export type UseNotificationReturn = {
     channelsEnsured: string[]
   }>
 
-  /**
-   * notify()
-   * Shows a notification immediately (trigger: null).
-   * Never throws; returns ok:false with a reason on failure.
-   */
   notify: (payload: NotifyPayload) => Promise<NotifyResult>
 
-  /**
-   * schedule()
-   * Schedules a notification in the future.
-   * Use { at: targetDate } for wall-clock timers so it fires even if JS is paused.
-   * Never throws; returns ok:false with a reason on failure.
-   */
   schedule: (
     payload: NotifyPayload,
     trigger: ScheduleTrigger
   ) => Promise<NotifyResult>
 
-  /**
-   * cancelScheduled()
-   * Cancels a single scheduled notification by id.
-   * Safe to call even if the id is invalid or already fired.
-   */
   cancelScheduled: (notificationId: string) => Promise<void>
 
-  /**
-   * cancelAllScheduled()
-   * Cancels all scheduled notifications for this app.
-   * Use with care; generally prefer cancelScheduled(id).
-   */
   cancelAllScheduled: () => Promise<void>
 
-  /** Returns whether the channel has been ensured in this runtime session. */
   hasEnsuredChannel: (channelId: string) => boolean
 }
 
-/**
- * useNotificationApi
- * Internal hook. Use the exported useNotification() to access the context.
- */
 function useNotificationApi(
   opts: UseNotificationOptions = {}
 ): UseNotificationReturn {
@@ -222,9 +202,6 @@ function useNotificationApi(
     }
   }, [])
 
-  /**
-   * Map our abstract importance to expo-notifications AndroidImportance.
-   */
   const mapImportance = useCallback((i?: AndroidChannelSpec['importance']) => {
     const A = Notifications.AndroidImportance
     switch (i) {
@@ -242,9 +219,6 @@ function useNotificationApi(
     }
   }, [])
 
-  /**
-   * Lookup declared channels by id.
-   */
   const declaredChannelById = useMemo(() => {
     const m = new Map<string, AndroidChannelSpec>()
     for (const ch of channels) m.set(ch.id, ch)
@@ -259,10 +233,6 @@ function useNotificationApi(
     if (mountedRef.current) setPermissionStatus(s)
   }, [])
 
-  /**
-   * requestPermission()
-   * Checks and requests permission if needed. Never throws.
-   */
   const requestPermission = useCallback(async (): Promise<PermissionStatus> => {
     try {
       const current = await Notifications.getPermissionsAsync()
@@ -294,12 +264,6 @@ function useNotificationApi(
     }
   }, [safeSetPermissionStatus, warnOnceOnDenied])
 
-  /**
-   * ensureAndroidChannel(channelId)
-   * Ensures an Android channel exists. Idempotent; never throws.
-   *
-   * If the channel is not in declared channels, a fallback spec is created.
-   */
   const ensureAndroidChannel = useCallback(
     async (channelId: string): Promise<boolean> => {
       if (Platform.OS !== 'android') return true
@@ -315,6 +279,7 @@ function useNotificationApi(
           sound: 'default',
           vibration: channelId === 'pomodoro',
           lights: false,
+          bypassDnd: false,
         } satisfies AndroidChannelSpec)
 
       try {
@@ -333,6 +298,12 @@ function useNotificationApi(
 
           enableVibrate: spec.vibration !== false,
           enableLights: spec.lights === true,
+
+          /**
+           * Best-effort: allow bypassing DND.
+           * This does NOT override a muted channel or silent ringer.
+           */
+          bypassDnd: spec.bypassDnd === true,
         })
         ensuredChannelsRef.current.add(channelId)
         return true
@@ -348,10 +319,6 @@ function useNotificationApi(
     [declaredChannelById, defaultChannelId, mapImportance]
   )
 
-  /**
-   * ensureDeclaredChannels()
-   * Ensures defaultChannelId + all declared channels exist (Android only).
-   */
   const ensureDeclaredChannels = useCallback(async (): Promise<string[]> => {
     if (Platform.OS !== 'android') return []
     const ids = new Set<string>([
@@ -367,10 +334,6 @@ function useNotificationApi(
     return ensured
   }, [channels, defaultChannelId, ensureAndroidChannel])
 
-  /**
-   * ensureReady()
-   * Requests permission (optional) and ensures channels (optional).
-   */
   const ensureReady = useCallback<UseNotificationReturn['ensureReady']>(
     async (localOpts) => {
       if (!enabled) return { permissionStatus, channelsEnsured: [] }
@@ -387,7 +350,6 @@ function useNotificationApi(
 
       let channelsEnsured: string[] = []
       if (doChannels) {
-        // Channels can be ensured even if permission is denied; keep it simple.
         channelsEnsured = await ensureDeclaredChannels()
       }
 
@@ -400,10 +362,6 @@ function useNotificationApi(
     | { ok: true; channelId: string; reason?: never }
     | { ok: false; reason: NotifyResult['reason'] }
 
-  /**
-   * guardAndPrepare(payload)
-   * Shared gate logic for notify() and schedule().
-   */
   const guardAndPrepare = useCallback(
     async (payload: NotifyPayload): Promise<PrepResult> => {
       if (!enabled) return { ok: false, reason: 'disabled' }
@@ -431,9 +389,6 @@ function useNotificationApi(
     ]
   )
 
-  /**
-   * toExpoTrigger(trigger)
-   */
   const toExpoTrigger = useCallback((trigger: ScheduleTrigger) => {
     const T = Notifications.SchedulableTriggerInputTypes
 
@@ -451,10 +406,6 @@ function useNotificationApi(
     }
   }, [])
 
-  /**
-   * notify()
-   * Immediate local notification (trigger: null).
-   */
   const notify = useCallback<UseNotificationReturn['notify']>(
     async (payload) => {
       const prep = await guardAndPrepare(payload)
@@ -478,7 +429,6 @@ function useNotificationApi(
             ...(Platform.OS === 'android'
               ? {
                   channelId: prep.channelId,
-                  // Optional tag support varies by expo-notifications versions/typings.
                   // ts-expect-error - tag may not exist in some expo-notifications typings
                   tag: payload.tag,
                 }
@@ -495,10 +445,6 @@ function useNotificationApi(
     [guardAndPrepare]
   )
 
-  /**
-   * schedule()
-   * Schedules a notification for a future time.
-   */
   const schedule = useCallback<UseNotificationReturn['schedule']>(
     async (payload, trigger) => {
       const prep = await guardAndPrepare(payload)
@@ -529,7 +475,6 @@ function useNotificationApi(
                 }
               : {}),
           },
-          // "as any" because expo-notifications TriggerInput typing varies across versions.
           trigger: expoTrigger as any,
         })
 
@@ -542,9 +487,6 @@ function useNotificationApi(
     [guardAndPrepare, toExpoTrigger]
   )
 
-  /**
-   * cancelScheduled()
-   */
   const cancelScheduled = useCallback(async (notificationId: string) => {
     try {
       await Notifications.cancelScheduledNotificationAsync(notificationId)
@@ -553,9 +495,6 @@ function useNotificationApi(
     }
   }, [])
 
-  /**
-   * cancelAllScheduled()
-   */
   const cancelAllScheduled = useCallback(async () => {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync()
@@ -564,9 +503,6 @@ function useNotificationApi(
     }
   }, [])
 
-  /**
-   * Auto-boot on mount
-   */
   useEffect(() => {
     if (!enabled) return
     if (!requestPermissionOnMount) return
@@ -587,15 +523,6 @@ function useNotificationApi(
 
 const NotificationContext = createContext<UseNotificationReturn | null>(null)
 
-/**
- * NotificationProvider
- * Wrap your app once so useNotification() is accessible anywhere.
- *
- * Example:
- *   <NotificationProvider channels={TODOIT_CHANNELS}>
- *     <App />
- *   </NotificationProvider>
- */
 export const NotificationProvider = ({
   children,
   channels,
@@ -615,10 +542,6 @@ export const NotificationProvider = ({
   )
 }
 
-/**
- * useNotification
- * Access the notification API from anywhere inside NotificationProvider.
- */
 function useNotification() {
   const ctx = useContext(NotificationContext)
   if (!ctx) {

@@ -1,20 +1,20 @@
 import { Pressable, Text } from 'react-native'
 
 import { Image } from 'expo-image'
-import Animated, { SlideOutDown } from 'react-native-reanimated'
+import Animated, { SlideOutLeft } from 'react-native-reanimated'
 import { getRandomizedLightColors } from '../colors'
 
 const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
   return (
     <Animated.View
-      exiting={SlideOutDown.duration(1000).delay(2000)}
+      exiting={SlideOutLeft.duration(800).delay(2000)}
       style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: '#EFE3D2',
+        backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 999,
@@ -23,7 +23,7 @@ const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
       }}
     >
       <Image
-        source={require('../assets/gifs/shroomLoading.gif')}
+        source={require('../assets/gifs/walkingShrooms.gif')}
         style={{ width: 200, height: 200 }}
         contentFit='contain'
       />
@@ -36,6 +36,14 @@ const SplashLoadingScreen = ({ connect, authBooting, authError }) => {
           backgroundColor: getRandomizedLightColors()[0],
           paddingHorizontal: 35,
           paddingVertical: 20,
+
+          shadowOffset: {
+            width: 12,
+            height: 12,
+          },
+          shadowOpacity: 0.9,
+          shadowRadius: 0,
+          elevation: 1,
         }}
       >
         <Text>{authBooting ? 'CONNECTING…' : 'AUTH'}</Text>

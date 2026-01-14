@@ -31,6 +31,7 @@ import {
 } from 'react-native'
 import { useSessionState } from '../hooks/useSessionState'
 import { ACCOMPLISHMENT, RUNNING, SessionPhase } from '../hooks/useStatus'
+import useTimer from '../hooks/useTimer'
 import { useToggleComplete } from '../hooks/useToggleComplete'
 
 type GoogleTaskStatus = 'needsAction' | 'completed'
@@ -52,13 +53,11 @@ const Task = ({
   status: SessionPhase
   setStatus: (status: SessionPhase) => void
 }) => {
-  // React Query mutation scoped to this list
   const toggleComplete = useToggleComplete(listId)
-  // const deleteTask = useDeleteTask(listId)
-  // const editTask = useEditTask(listId)
-  // Menu state
   const [showMenu, setShowMenu] = useState(false)
   const { incrementTasksCompleted } = useSessionState()
+  const { setTimer, clearTimer, timer } = useTimer()
+  const { setCompletedTimeString } = useSessionState()
   // “Checked” is derived from Google task state (single source of truth)
   const isChecked = taskStatus === 'completed'
 
@@ -97,6 +96,8 @@ const Task = ({
         {
           text: 'End Session',
           onPress: () => {
+            setCompletedTimeString(timer.elapsed.timeString)
+            clearTimer()
             setStatus({ status: ACCOMPLISHMENT })
           },
         },
