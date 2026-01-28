@@ -1,134 +1,155 @@
+// StartButton.tsx
 import FontAwesome from '@react-native-vector-icons/fontawesome'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Alert, Text, TouchableOpacity } from 'react-native'
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
+
 import { useSessionState } from '../hooks/useSessionState'
 import { ACCOMPLISHMENT, IDLE, RUNNING, useStatus } from '../hooks/useStatus'
 import useTimer from '../hooks/useTimer'
 import { KeepAwakeWhileRunning } from './KeepAwakeWhileRunning'
+import useActiveList from '../hooks/useActiveList'
 import { useToggleComplete } from '../hooks/useToggleComplete'
-import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity)
+
 const StartButton = () => {
   const { status, setStatus } = useStatus()
   const { setTimer, timerActive, timer, clearTimer } = useTimer()
-  const { setCompletedTimeString, highlightedTaskId, tasksCompleted } = useSessionState()
-  // const toggleComplete = useToggleComplete(listId)
-  const didCompleteRef = useRef(false)
+  const { setCompletedTimeString, tasksCompleted, incrementTasksCompleted } =
+    useSessionState()
+
+  const {activeList} = useActiveList()
+  const toggleComplete = useToggleComplete()
+
+  /**
+   * Re-entrancy guard: when remaining.ms hits 0, React can re-render/effect-run
+   * multiple times while values keep updating. This ensures we handle "timer ended"
+   * exactly once per session.
+   */
+  const handledTimerEndRef = useRef(false)
+
+  // --- Button background animation (dark when idle, light when active) ---
   const colorProgress = useSharedValue(0)
+
   useEffect(() => {
     colorProgress.value = withSpring(timerActive ? 1 : 0)
-  }, [timerActive])
+  }, [timerActive, colorProgress])
 
   const colorChangeStyle = useAnimatedStyle(() => {
     return {
-      backgroundColor: interpolateColor(colorProgress.value, [0,1], ["#333", "#fff"])
+      backgroundColor: interpolateColor(
+        colorProgress.value,
+        [0, 1],
+        ['#333', '#fff']
+      ),
     }
   })
-  const handleStartPress = () => {
-    if (!timerActive) {
-      didCompleteRef.current = false
-      setTimer()
-      setStatus({ status: RUNNING, highlightedTaskId: null })
-    } else {
-      createCancelAlert()
-    }
-  }
 
-  const createCancelAlert = () =>
-    Alert.alert('End Session?', 'Would you like to end your session?', [
-      { text: 'Continue Session', onPress: () => null },
-      {
-        text: 'End Session',
-        onPress: () => {
-          const {timeString} = timer.elapsed
+  // --- Core: end session in exactly one place ---
+  const finishSession = useCallback(() => {
+    const { timeString } = timer.elapsed
+
     clearTimer()
-    if(tasksCompleted > 0){
-      setCompletedTimeString(timeString)
 
+    // Current rule: only show accomplishment if any tasks were completed
+    if (tasksCompleted > 0) {
+      setCompletedTimeString(timeString)
       setStatus({ status: ACCOMPLISHMENT })
-    }else{
-      setStatus({status: IDLE})
+    } else {
+      setStatus({ status: IDLE })
     }
+  }, [
+    timer.elapsed,
+    clearTimer,
+    tasksCompleted,
+    setCompletedTimeString,
+    setStatus,
+  ])
+
+  const promptEndSession = useCallback(() => {
+    Alert.alert('End Session?', 'Would you like to end your session?', [
+      { text: 'Continue Session', style: 'cancel' },
+      { text: 'End Session', style: 'destructive', onPress: () => {
+        if(status.highlightedTaskId){
+          promptDidYouComplete()
+        }else{
+          finishSession()
+        }
+      } },
+    ])
+  }, [finishSession])
+
+  const promptDidYouComplete = useCallback(() => {
+    Alert.alert('Did you finish your task?', undefined, [
+      {
+        text: 'Yes!',
+        onPress: () => {
+          // TODO: when task completion is wired up, mutate here
+          console.log(activeList)
+          toggleComplete.mutate({
+            taskId: status.highlightedTaskId,
+            listId: activeList,
+            completed: true
+          })
+          incrementTasksCompleted()
+          finishSession()
         },
       },
+      {
+        text: 'No',
+        style: 'cancel',
+        onPress: finishSession, // same behavior for now
+      },
     ])
-    function showDidYouComplete() {
-      // TODO: add highlighted task test
-      Alert.alert('Did you finish your task?', [
-        {
-          text: "Yes!",
-          onPress: () => {
-            // TODO: Mark task as complete
-              didCompleteRef.current = true
-              setCompletedTimeString(timer.elapsed.timeString)
-              clearTimer()
-              setStatus({ status: ACCOMPLISHMENT })
-          }
-        },
-        {
-          text: "No",
-          onPress: () => {
-              didCompleteRef.current = true
-              setCompletedTimeString(timer.elapsed.timeString)
-              clearTimer()
-              setStatus({ status: ACCOMPLISHMENT })
-          }
-        },
+  }, [finishSession])
 
-      ])
-    //   Alert.alert('Did you finish your task?', [
-    //   { text: 'Yes!',
-    //     onPress: () => {
-    //       didCompleteRef.current = true
-
-    //       setCompletedTimeString(timer.elapsed.timeString)
-    //       clearTimer()
-    //       setStatus({ status: ACCOMPLISHMENT })
-    //   },
-    // },
-    //   {
-    //     text: 'End Session',
-    //     onPress: () => {
-    //       const { timeString, ms } = timer.elapsed
-    //       setCompletedTimeString(timeString)
-    //       clearTimer()
-    //       if (ms < 1000) {
-    //         setStatus({ status: IDLE })
-    //       }else{
-    //         setStatus({status: ACCOMPLISHMENT})
-    //       }
-    //     },
-    //   },
+  const handleStartPress = useCallback(() => {
+    if (!timerActive) {
+      handledTimerEndRef.current = false
+      setTimer()
+      setStatus({ status: RUNNING, highlightedTaskId: null })
+      return
     }
+    promptEndSession()
+  }, [timerActive, setTimer, setStatus, promptEndSession])
+
+  // Reset guard whenever timer is not active (manual cancel or session end)
   useEffect(() => {
     if (!timerActive) {
-      didCompleteRef.current = false
-      return
+      handledTimerEndRef.current = false
     }
-    if (timer.remaining.ms > 0) return
-    if (didCompleteRef.current) return
-    if (!highlightedTaskId) {
-      showDidYouComplete()
-      return
-    }
-    didCompleteRef.current = true
-    const {timeString} = timer.elapsed
-    clearTimer()
-    if(tasksCompleted > 0){
-      setCompletedTimeString(timeString)
+  }, [timerActive])
 
-      setStatus({ status: ACCOMPLISHMENT })
-    }else{
-      setStatus({status: IDLE})
+  // Timer completion: run exactly once when remaining.ms reaches 0
+  useEffect(() => {
+    if (!timerActive) return
+    if (timer.remaining.ms > 0) return
+    if (handledTimerEndRef.current) return
+
+    handledTimerEndRef.current = true
+
+    // Current behavior:
+    // - No highlighted task: ask the user
+    // - Highlighted task: auto-finish (you can swap for "end/continue" prompt later)
+
+    if (status.highlightedTaskId) {
+      promptDidYouComplete()
+    } else {
+      finishSession()
     }
   }, [
     timerActive,
     timer.remaining.ms,
-    timer.elapsed.timeString,
-    clearTimer,
-    setStatus,
-    setCompletedTimeString,
+    status.highlightedTaskId,
+    promptDidYouComplete,
+    finishSession,
   ])
 
   return (
@@ -150,7 +171,13 @@ const StartButton = () => {
       {!timerActive ? (
         <FontAwesome name="play" size={50} color="#fff" />
       ) : (
-        <Text style={{ color: '#111', fontSize: 30, textAlignVertical: 'center' }}>
+        <Text
+          style={{
+            color: '#111',
+            fontSize: 30,
+            textAlignVertical: 'center',
+          }}
+        >
           {timer.remaining.timeString}
         </Text>
       )}

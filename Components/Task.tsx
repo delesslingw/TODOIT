@@ -53,7 +53,7 @@ const Task = ({
   status: SessionPhase
   setStatus: (status: SessionPhase) => void
 }) => {
-  const toggleComplete = useToggleComplete(listId)
+  const toggleComplete = useToggleComplete()
   const [showMenu, setShowMenu] = useState(false)
   const { incrementTasksCompleted } = useSessionState()
   const { setTimer, clearTimer, timer } = useTimer()
@@ -121,6 +121,7 @@ const Task = ({
     toggleComplete.mutate({
       taskId: id,
       completed: nextChecked,
+      listId,
     })
     incrementTasksCompleted()
 
