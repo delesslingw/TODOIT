@@ -67,8 +67,19 @@ export type AndroidChannelSpec = {
   description?: string
   /** Abstracted importance; mapped to expo-notifications AndroidImportance. */
   importance?: 'min' | 'low' | 'default' | 'high' | 'max'
-  /** Best-effort default at channel creation time. User can override in OS settings. */
-  sound?: boolean // default true
+
+  /**
+   * Android: sound is decided by the *channel* at creation time.
+   *
+   * - false      => no sound
+   * - 'default'  => system default sound
+   * - 'alarm'    => android/app/src/main/res/raw/alarm.wav (or .ogg)
+   * - 'bell'     => android/app/src/main/res/raw/bell.wav (or .ogg)
+   *
+   * Note: users can override channel sound in OS settings.
+   */
+  sound?: false | 'default' | string
+
   /** Best-effort default at channel creation time. User can override in OS settings. */
   vibration?: boolean // default true
   /** Best-effort default at channel creation time. User can override in OS settings. */
@@ -94,10 +105,17 @@ export type NotifyPayload = {
   data?: Record<string, unknown>
   /** Android channel id (defaults to defaultChannelId). */
   channelId?: string
-  /** Best-effort. Android is largely channel-driven; iOS behavior differs. */
+
+  /**
+   * Best-effort.
+   * - iOS: per-notification sound can be honored.
+   * - Android: channel-driven; this is ignored if a channel sound exists.
+   */
   sound?: boolean
+
   /** Best-effort. Android is largely channel-driven; iOS behavior differs. */
   vibration?: boolean
+
   /**
    * Optional identifier used for grouping/replacement semantics.
    * Note: support varies by expo-notifications version/typings.
@@ -294,7 +312,7 @@ function useNotificationApi(
           id: channelId,
           name: channelId === defaultChannelId ? 'General' : channelId,
           importance: channelId === 'pomodoro' ? 'high' : 'default',
-          sound: true,
+          sound: 'default',
           vibration: channelId === 'pomodoro',
           lights: false,
         } satisfies AndroidChannelSpec)
@@ -304,8 +322,15 @@ function useNotificationApi(
           name: spec.name,
           description: spec.description,
           importance: mapImportance(spec.importance),
-          // Best-effort. Some behaviors are channel/user controlled.
-          sound: spec.sound === false ? undefined : 'default',
+
+          /**
+           * Android sound is channel-driven:
+           * - undefined => no sound
+           * - 'default' => system default
+           * - 'alarm'   => res/raw/alarm.wav (or .ogg)
+           */
+          sound: spec.sound === false ? undefined : spec.sound ?? 'default',
+
           enableVibrate: spec.vibration !== false,
           enableLights: spec.lights === true,
         })
@@ -408,12 +433,6 @@ function useNotificationApi(
 
   /**
    * toExpoTrigger(trigger)
-   *
-   * IMPORTANT:
-   * Some expo-notifications versions accept Date or { seconds } directly,
-   * but newer runtimes validate triggers and require an object with a `type`.
-   *
-   * Using SchedulableTriggerInputTypes keeps us compatible with the stricter validator.
    */
   const toExpoTrigger = useCallback((trigger: ScheduleTrigger) => {
     const T = Notifications.SchedulableTriggerInputTypes
@@ -447,12 +466,20 @@ function useNotificationApi(
             title: payload.title,
             body: payload.body,
             data: payload.data,
-            sound: payload.sound === false ? undefined : 'default',
+
+            // iOS may honor per-notification sound; Android is channel-driven.
+            sound:
+              Platform.OS === 'ios'
+                ? payload.sound === false
+                  ? undefined
+                  : 'default'
+                : undefined,
+
             ...(Platform.OS === 'android'
               ? {
                   channelId: prep.channelId,
                   // Optional tag support varies by expo-notifications versions/typings.
-                  // @ts-expect-error - tag may not exist in some expo-notifications typings
+                  // ts-expect-error - tag may not exist in some expo-notifications typings
                   tag: payload.tag,
                 }
               : {}),
@@ -471,9 +498,6 @@ function useNotificationApi(
   /**
    * schedule()
    * Schedules a notification for a future time.
-   *
-   * For wall-clock timers, prefer: schedule(payload, { at: targetDate })
-   * so it fires even if JS is paused in background.
    */
   const schedule = useCallback<UseNotificationReturn['schedule']>(
     async (payload, trigger) => {
@@ -488,7 +512,15 @@ function useNotificationApi(
             title: payload.title,
             body: payload.body,
             data: payload.data,
-            sound: payload.sound === false ? undefined : 'default',
+
+            // iOS may honor per-notification sound; Android is channel-driven.
+            sound:
+              Platform.OS === 'ios'
+                ? payload.sound === false
+                  ? undefined
+                  : 'default'
+                : undefined,
+
             ...(Platform.OS === 'android'
               ? {
                   channelId: prep.channelId,
@@ -512,7 +544,6 @@ function useNotificationApi(
 
   /**
    * cancelScheduled()
-   * Cancels one scheduled notification by its id. Never throws.
    */
   const cancelScheduled = useCallback(async (notificationId: string) => {
     try {
@@ -524,7 +555,6 @@ function useNotificationApi(
 
   /**
    * cancelAllScheduled()
-   * Cancels all scheduled notifications for the app. Never throws.
    */
   const cancelAllScheduled = useCallback(async () => {
     try {
@@ -536,10 +566,6 @@ function useNotificationApi(
 
   /**
    * Auto-boot on mount
-   * - Requests permission (optional)
-   * - Ensures channels (optional)
-   *
-   * This runs once per mount; safe even in dev/hot reload scenarios.
    */
   useEffect(() => {
     if (!enabled) return

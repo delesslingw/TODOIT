@@ -22,7 +22,7 @@ function AppView() {
   const { connected, authBooting, authError, connect } = useGoogleAuthGate({
     silentOnMount: true,
   })
-  const [duration, setDuration] = useState(25)
+  // const [duration, setDuration] = useState(25)
   const [showMenu, setShowMenu] = useState(false)
   const { status } = useStatus()
   const started = status.status === RUNNING
@@ -59,7 +59,7 @@ function AppView() {
           <MenuButton open={() => setShowMenu(true)} />
         </View>
         <View style={{ alignItems: 'center', marginVertical: 35 }}>
-          <StartButton duration={duration} />
+          <StartButton />
         </View>
 
         <Lists
@@ -72,8 +72,8 @@ function AppView() {
       </View>
       {showMenu ? (
         <Menu
-          duration={duration}
-          updateDuration={setDuration}
+          // duration={duration}
+          // updateDuration={setDuration}
           close={() => setShowMenu(false)}
         />
       ) : null}
