@@ -7,6 +7,7 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated'
 import Carousel from 'react-native-reanimated-carousel'
+import useActiveList from '../hooks/useActiveList'
 import { useStatus } from '../hooks/useStatus'
 import TaskView from './TaskView'
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
@@ -23,7 +24,11 @@ export default function Lists({ lists, onAddTask }: Props) {
   const PAGE_WIDTH = SCREEN_WIDTH
   const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9)
   const CAROUSEL_HEIGHT = Math.round(SCREEN_HEIGHT * 0.68)
-
+  const { setActiveList } = useActiveList()
+  const handleSnapToItem = (i) => {
+    setActiveList(lists[data[i]].id)
+    setActiveIndex(i)
+  }
   if (!data.length) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -49,7 +54,7 @@ export default function Lists({ lists, onAddTask }: Props) {
         parallaxScrollingOffset: 60,
         parallaxAdjacentItemScale: 0.82,
       }}
-      onSnapToItem={setActiveIndex}
+      onSnapToItem={handleSnapToItem}
       renderItem={({ item: listName, index }) => (
         <ListCard
           key={listName}

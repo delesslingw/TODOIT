@@ -3,29 +3,41 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GTask, patchTask } from '../helpers/googleTasksApi'
 import { getAccessTokenOrThrow } from '../helpers/googleToken'
 
-export function useToggleComplete(listId: string) {
+type ToggleCompleteVars = {
+  listId: string
+  taskId: string
+  completed: boolean
+}
+
+type ToggleCompleteContext = {
+  prev?: GTask[]
+}
+
+export function useToggleComplete() {
   const qc = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (vars: { taskId: string; completed: boolean }) => {
+  return useMutation<
+    unknown,
+    unknown,
+    ToggleCompleteVars,
+    ToggleCompleteContext
+  >({
+    mutationFn: async ({ listId, taskId, completed }) => {
       const token = await getAccessTokenOrThrow()
-      return patchTask(token, listId, vars.taskId, {
-        status: vars.completed ? 'completed' : 'needsAction',
+      return patchTask(token, listId, taskId, {
+        status: completed ? 'completed' : 'needsAction',
       })
     },
 
-    onMutate: async (vars) => {
-      // Cancel any in-flight fetches so we don’t overwrite our optimistic update
+    onMutate: async ({ listId, taskId, completed }) => {
       await qc.cancelQueries({ queryKey: ['tasks', listId] })
 
-      // Snapshot previous tasks for rollback
       const prev = qc.getQueryData<GTask[]>(['tasks', listId])
 
-      // Optimistically update the task status in cache
       qc.setQueryData<GTask[]>(['tasks', listId], (old = []) =>
         old.map((t) =>
-          t.id === vars.taskId
-            ? { ...t, status: vars.completed ? 'completed' : 'needsAction' }
+          t.id === taskId
+            ? { ...t, status: completed ? 'completed' : 'needsAction' }
             : t
         )
       )
@@ -33,14 +45,15 @@ export function useToggleComplete(listId: string) {
       return { prev }
     },
 
-    onError: (_err, _vars, ctx) => {
-      // Rollback on failure
-      if (ctx?.prev) qc.setQueryData(['tasks', listId], ctx.prev)
+    onError: (_err, variables, ctx) => {
+      if (ctx?.prev) {
+        qc.setQueryData<GTask[]>(['tasks', variables.listId], ctx.prev)
+      }
     },
 
-    onSettled: () => {
-      // Sync with server truth + ensure completed tasks disappear if you’re hiding them
-      qc.invalidateQueries({ queryKey: ['tasks', listId] })
+    onSettled: (_data, _err, variables) => {
+      if (!variables) return
+      qc.invalidateQueries({ queryKey: ['tasks', variables.listId] })
     },
   })
 }

@@ -18,9 +18,10 @@ const useActiveList = () => {
   const ctx = useContext(ActiveListContext)
   if (!ctx) {
     throw new Error(
-      'useActiveList must be used in a component inside ActiveListProvider'
+      'useActiveList must be used in a component inside ActiveListProvider',
     )
   }
+  return ctx
 }
 
 export default useActiveList

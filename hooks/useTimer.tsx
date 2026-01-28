@@ -39,7 +39,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
   const [targetTime, setTargetTime] = useState<Date | null>(null)
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [timerActive, setTimerActive] = useState<boolean>(false)
-  const [durationInMs, setDurationInMs] = useState<number>(25 * 60 * 1000)
+  const [durationInMs, setDurationInMs] = useState<number>(20 * 60 * 1000)
   // Provider-owned clock for UI refresh
   const [nowMs, setNowMs] = useState<number>(() => Date.now())
 
@@ -79,7 +79,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
             targetTimeMs: target.getTime(),
           },
         },
-        { at: target }
+        { at: target },
       )
 
       if (res.ok && res.notificationId) {
@@ -87,7 +87,7 @@ export const TimerProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.warn(
           '[useTimer] Failed to schedule timer notification:',
-          res.reason
+          res.reason,
         )
       }
     })()
@@ -157,7 +157,7 @@ const useTimer = (): ContextType => {
   const ctx = useContext(TimerContext)
   if (!ctx) {
     throw new Error(
-      'useTimer may only be used in a component that is a descendent of TimerProvider'
+      'useTimer may only be used in a component that is a descendent of TimerProvider',
     )
   }
   return ctx
