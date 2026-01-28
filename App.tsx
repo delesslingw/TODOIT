@@ -1,13 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
 import Accomplishment from './Components/Accomplishment'
 import Lists from './Components/Lists'
 import Menu, { MenuButton } from './Components/Menu'
 import SplashLoadingScreen from './Components/SplashLoadingScreen'
 import StartButton from './Components/StartButton'
 import { TODOIT_CHANNELS } from './helpers/consts'
+import { ActiveListProvider } from './hooks/useActiveList'
 import { useForceOtaOnLaunch } from './hooks/useForceOtaOnLaunch'
 import { useGoogleAuthGate } from './hooks/useGoogleAuthGate'
 import { NotificationProvider } from './hooks/useNotification'
@@ -27,7 +34,7 @@ function AppView() {
   const { status } = useStatus()
   const started = status.status === RUNNING
   const enabled = otaReady && connected
-
+  const backgroundColorProgress = useSharedValue(0)
   const { listsForUI, dataBooting, dataError, addTaskMutation } = useTasks({
     enabled,
     showCompleted: false,
@@ -35,25 +42,36 @@ function AppView() {
 
   const showSplash = !otaReady || authBooting || !connected || dataBooting
   const splashBusy = !otaReady || authBooting || dataBooting
+  useEffect(() => {
+    backgroundColorProgress.value = withSpring(started ? 1 : 0)
+  }, [started])
 
-  if (showSplash) {
-    return (
-      <SplashLoadingScreen
-        authError={dataError ? String(dataError) : authError}
-        authBooting={splashBusy}
-        connect={connect}
-      />
-    )
-  }
+  const animatedBgStyle = useAnimatedStyle(() => {
+    return {
+      backgroundColor: interpolateColor(
+        backgroundColorProgress.value,
+        [0, 1],
+        ['#fff', '#333']
+      ),
+    }
+  })
 
-  return (
+  return showSplash ? (
+    <SplashLoadingScreen
+      authError={dataError ? String(dataError) : authError}
+      authBooting={splashBusy}
+      connect={connect}
+    />
+  ) : (
     <>
-      <View
-        style={{
-          backgroundColor: !started ? '#fff' : '#111',
-          paddingTop: 20,
-          flex: 1,
-        }}
+      <Animated.View
+        style={[
+          {
+            paddingTop: 20,
+            flex: 1,
+          },
+          animatedBgStyle,
+        ]}
       >
         <View style={{ alignSelf: 'flex-end', padding: 12 }}>
           <MenuButton open={() => setShowMenu(true)} />
@@ -69,7 +87,7 @@ function AppView() {
           }}
         />
         <StatusBar style='auto' />
-      </View>
+      </Animated.View>
       {showMenu ? (
         <Menu
           // duration={duration}
@@ -91,7 +109,9 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <StatusProvider>
             <SessionStateProvider>
-              <AppView />
+              <ActiveListProvider>
+                <AppView />
+              </ActiveListProvider>
             </SessionStateProvider>
           </StatusProvider>
         </QueryClientProvider>

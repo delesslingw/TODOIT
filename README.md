@@ -1,15 +1,24 @@
 # TODOIT
+- [ ] "Did you finish your task" IF timer ends while there is an activeTaskId
+- [ ] Reanimation:
+  - [ ] Background color
+  - [ ] Task Size
+    - [ ] How do we clip string length?
+  - [ ] Button
 
 ## Important Commands
 - Build Dev Client: `eas build -p android --profile development`
 - Build Standalone Preview : `eas build -p android --profile preview`
 - Build Preview Locally: `eas build --platform android --local --profile preview`
   - If you run into metaspace issues consider running:
-    - `export JAVA_TOOL_OPTIONS="-XX:MaxMetaspaceSize=1024m"
+    - ```
+      export JAVA_TOOL_OPTIONS="-XX:MaxMetaspaceSize=1024m"
       export GRADLE_OPTS="-Dorg.gradle.jvmargs='-Xmx4g -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8'"
       export KOTLIN_DAEMON_JVMARGS="-Xmx2g -XX:MaxMetaspaceSize=1024m"
       export NODE_OPTIONS="--max-old-space-size=8192"
+      ```
 - Push OTA JS Update: `npx eas update --channel preview --message "Your Message"`
+- Download build to android: `adb install -r ` + BUILD_PATH
 
 
 ## TODO
