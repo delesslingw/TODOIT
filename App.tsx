@@ -14,6 +14,7 @@ import { NotificationProvider } from './hooks/useNotification'
 import { SessionStateProvider } from './hooks/useSessionState'
 import { RUNNING, StatusProvider, useStatus } from './hooks/useStatus'
 import { useTasks } from './hooks/useTasks'
+import { TimerProvider } from './hooks/useTimer'
 // ...
 
 function AppView() {
@@ -86,13 +87,15 @@ const queryClient = new QueryClient()
 export default function App() {
   return (
     <NotificationProvider channels={TODOIT_CHANNELS}>
-      <QueryClientProvider client={queryClient}>
-        <StatusProvider>
-          <SessionStateProvider>
-            <AppView />
-          </SessionStateProvider>
-        </StatusProvider>
-      </QueryClientProvider>
+      <TimerProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusProvider>
+            <SessionStateProvider>
+              <AppView />
+            </SessionStateProvider>
+          </StatusProvider>
+        </QueryClientProvider>
+      </TimerProvider>
     </NotificationProvider>
   )
 }
